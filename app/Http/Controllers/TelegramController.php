@@ -154,6 +154,7 @@ class TelegramController extends Controller
 
             $user = User::query()
                 ->where('chat', (string)$chat['id'])
+                ->where('type', 'telegram')
                 ->first();
 
             if (!$user) {

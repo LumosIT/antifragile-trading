@@ -28,6 +28,14 @@
                 <div class="d-none">
                     <div id="" class="py-2 datatable_filters" style="width: 200px;">
                         <div class="form-group mb-3">
+                            <label for="" class="fs-12">Платформа</label>
+                            <select class="form-control w-100" data-trigger name="choices-single-default" id="filter_type">
+                                <option value="">Не важно</option>
+                                <option value="telegram">Telegram</option>
+                                <option value="max">MAX</option>
+                            </select>
+                        </div>
+                        <div class="form-group mb-3">
                             <label for="" class="fs-12">Заблокирован</label>
                             <select class="form-control w-100" data-trigger name="choices-single-default" id="filter_banned">
                                 <option value="">Не важно</option>
@@ -83,7 +91,7 @@
     <script>
 
         let dataTable = $("#datatable_custom").CustomDataTables({
-            url : '{{ route('admin.api.users.list') }}',
+            url : "{{ route('admin.api.users.list') }}",
             limit : 30,
             prepareResponse(json){
                 return json.response;
@@ -94,8 +102,17 @@
                     code : 'id',
                     sortable : true,
                     width: 100,
-                    data(row){
+                    data(row) {
                         return row.id;
+                    }
+                },
+                {
+                    name : 'Тип',
+                    code : 'type',
+                    sortable : true,
+                    width: 100,
+                    data(row) {
+                        return row.type;
                     }
                 },
                 {
@@ -219,7 +236,7 @@
 
                         `;
 
-                        if(row.username){
+                        if(row.username && row.type === 'telegram') {
                             links += `<a href="https://t.me/${htmlize(row.username)}" class="btn btn-icon btn-sm btn-primary-light btn-wave waves-effect waves-light me-1" target="_blank">
                                   <i class="ri-send-plane-fill"></i>
                                </a>`;
@@ -243,14 +260,13 @@
 
         initDatatableSearch(dataTable, $("#datatable_search"));
         initDatatableDateFilter(dataTable, $("#filter_date"));
+
         initDatatableFilter(dataTable, 'is_banned', $("#filter_banned"));
         initDatatableFilter(dataTable, 'is_alive', $("#filter_alive"));
         initDatatableFilter(dataTable, 'stage', $("#filter_stage"));
         initDatatableFilter(dataTable, 'tariff_id', $("#filter_tariff_id"));
+        initDatatableFilter(dataTable, 'type', $("#filter_type"));
 
         initDatatableRemoveButton(dataTable, '.js-remove-datatable-button', 'Удалить пользователя?');
-
-
-
     </script>
 @endpush

@@ -30,6 +30,7 @@ class UsersController extends Controller
             'is_alive' => ['nullable', 'integer'],
             'stage' => ['nullable', 'integer'],
             'tariff_id' => ['nullable', 'integer'],
+            'type' => ['nullable', 'string']
         ]);
 
         $users = User::query()->with('tariff');
@@ -50,14 +51,19 @@ class UsersController extends Controller
             $users->where('tariff_id', (int)$data['tariff_id']);
         }
 
+        if(Arr::has($data, 'type')) {
+            $users->where('type', $data['type']);
+        }
+
         $paginator = new ModernPerfectPaginator($users);
         $paginator->enabledDateFilter();
-        $paginator->setAllowedSearchColumns(['username', 'chat', 'email', 'fio', 'phone', 'name']);
+        $paginator->setAllowedSearchColumns(['username', 'type', 'chat', 'email', 'fio', 'phone', 'name']);
         $paginator->setSearchPreparator(function(string $search) {
             return ltrim($search, '@');
         });
         $paginator->setAllowedSortColumns([
             'id',
+            'type',
             'name',
             'username',
             'chat',

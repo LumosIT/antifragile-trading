@@ -60,7 +60,8 @@ class AdminPrepare
             'is_alive',
             'tariff_expired_at',
             'last_activity_at',
-            'created_at'
+            'created_at',
+            'type'
         ]);
 
         if($fullData){

@@ -51,8 +51,9 @@ class User extends Authenticatable
         //Meta targets
         'meta_is_accept_rules',
         'meta_is_buy',
-        'meta_is_pre_form_filled'
+        'meta_is_pre_form_filled',
 
+        'type',
     ];
 
     protected $attributes = [
