@@ -482,13 +482,18 @@ class TelegramBaseService
         /**
          * Разбаним
          */
-        try {
-            $this->telegramService->bot->unbanChatMember($channel, $user->chat);
-        }catch (\Throwable $e){}
+        if(!$this->telegramService->checkIsChannelMember($channel, $user)){
+            try {
+                $this->telegramService->bot->unbanChatMember($channel, $user->chat);
+            }catch (\Throwable $e){}
+        }
 
-        try{
-            $this->telegramService->bot->unbanChatMember($chat, $user->chat);
-        }catch (\Throwable $e){}
+        if(!$this->telegramService->checkIsChannelMember($chat, $user)) {
+            try {
+                $this->telegramService->bot->unbanChatMember($chat, $user->chat);
+            } catch (\Throwable $e) {
+            }
+        }
 
         $url = $this->telegramService->createChannelLink($channel);
 
@@ -511,9 +516,11 @@ class TelegramBaseService
         /**
          * Разбаним
          */
-        try {
-            $this->telegramService->bot->unbanChatMember($channel, $user->chat);
-        }catch (\Throwable $e){
+        if(!$this->telegramService->checkIsChannelMember($channel, $user)) {
+            try {
+                $this->telegramService->bot->unbanChatMember($channel, $user->chat);
+            } catch (\Throwable $e) {
+            }
         }
 
         $url = $this->telegramService->createChannelLink($channel);

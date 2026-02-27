@@ -6,15 +6,10 @@ use App\Consts\OptionTypes;
 use App\Consts\PostTypes;
 use App\Consts\TariffModes;
 use App\Consts\UserStages;
-use App\Jobs\Schedule\RunNightSpam;
 use App\Jobs\Schedule\ScheduleSpamPosts;
-use App\Jobs\Schedule\SpamPosts;
-use App\Jobs\Schedule\SpamWarmup;
 use App\Jobs\Telegram\SavePreRegistrationForm;
-use App\Jobs\Telegram\SendClearMenu;
 use App\Jobs\Telegram\SendMailing;
 use App\Models\Application;
-use App\Models\Link;
 use App\Models\Mailing;
 use App\Models\Post;
 use App\Models\Text;
@@ -47,10 +42,12 @@ class test extends Command
     protected $description = 'Command description';
 
 
-    public function handle(OptionsService $optionsService)
+    public function handle(TelegramService $telegramService, TelegramBaseService $telegramBaseService, OptionsService $optionsService)
     {
 
-       echo date('H:i');
+       $user = User::find(976);
+
+       $telegramBaseService->sendInviteToSecondStair($user);
 
     }
 }

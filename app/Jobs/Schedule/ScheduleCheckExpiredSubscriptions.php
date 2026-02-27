@@ -13,6 +13,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class ScheduleCheckExpiredSubscriptions implements ShouldQueue
 {
@@ -55,16 +56,17 @@ class ScheduleCheckExpiredSubscriptions implements ShouldQueue
         $users = User::query()
             ->whereNotNull('tariff_id')
             ->where(function($query){
-                $query->orWhere(function($subQuery){
-                    $subQuery->where('tariff_expired_at', '<', now());
-                    $subQuery->whereDoesntHave('activeSubscription');
-                });
+                $query->where('tariff_expired_at', '<', now());
+                $query->whereDoesntHave('activeSubscription');
             })
             ->lazyById(10);
 
         foreach($users as $user){
 
             \DB::transaction(function () use ($subscriptions, $user){
+
+                Log::debug('Kick from channel');
+                Log::debug($user);
 
                 $user->tariff_id = null;
                 $user->tariff_expired_at = null;
