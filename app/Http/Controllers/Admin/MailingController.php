@@ -16,10 +16,10 @@ use App\Utilits\TableGenerator\PerfectPaginatorResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class MailingController extends Controller
 {
-
     protected $textsService;
 
     public function __construct(TextsService $textsService)
@@ -40,6 +40,10 @@ class MailingController extends Controller
             $items->where('status', $data['status']);
         }
 
+        if(Arr::has($data, 'type') && $data['type'] !== 'all') {
+            $items->where('type', $data['type']);
+        }
+
         $paginator = new ModernPerfectPaginator($items);
         $paginator->setAllowedSearchColumns(['text']);
         $paginator->setAllowedSortColumns([
@@ -47,7 +51,8 @@ class MailingController extends Controller
             'text',
             'status',
             'users_count',
-            'messages_count'
+            'messages_count',
+            'type'
         ]);
 
         return $paginator->build($request)->map(function ($mailing) {
@@ -58,7 +63,6 @@ class MailingController extends Controller
 
     public function create(Request $request) : array
     {
-
         $data = $request->validate([
             'text' => ['required', 'string', 'max:4096'],
             'stages' => ['required', 'array', 'min:1'],
@@ -68,6 +72,7 @@ class MailingController extends Controller
             'file_ids' => ['nullable', 'array'],
             'file_ids.*' => ['nullable', 'integer', 'exists:files,id'],
             'buttons' => ['nullable', 'array'],
+            'type' => ['required', 'string'],
             'buttons.*' => ['string']
         ], [
             'stages.min' => 'Вы не выбрали ни один сегмент',
@@ -102,22 +107,23 @@ class MailingController extends Controller
                 'text' => $value,
                 'stages' => $data['stages'],
                 'tariffs' => $data['tariffs'],
-                'buttons' => $buttons
+                'type' => $data['type'],
+                'buttons' => $buttons,
             ]);
 
             $mailing->files()->attach($files_ids);
 
-            SendMailing::dispatch($mailing)->onQueue('telegram');
+            // если загружено видео, то max требуетс 20-30с, чтобы его обработать и он смог его присылать юзеру
+            SendMailing::dispatch($mailing)
+                ->onQueue('telegram')
+                ->delay(now()->addMinute());
 
             return $mailing;
 
         });
 
         return AdminPrepare::mailing($mailing);
-
     }
-
-
 
     public function stop(Request $request, Mailing $mailing) : array
     {
@@ -166,5 +172,4 @@ class MailingController extends Controller
         return AdminPrepare::mailing($mailing);
 
     }
-
 }

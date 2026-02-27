@@ -65,7 +65,11 @@ class ScheduleSpamContinue implements ShouldQueue
 
                 $next = $telegramWelcomeService->getNextStartKey($user->start_key);
 
-                $telegramWelcomeService->sendByStartKey($user, $next);
+                if($user->type === 'telegram') {
+                    $telegramWelcomeService->sendByStartKey($user, $next);
+                } else {
+
+                }
 
                 $user->start_key = $next;
                 $user->continue_notify_at = now();

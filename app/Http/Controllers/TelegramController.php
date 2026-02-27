@@ -22,6 +22,7 @@ use App\Services\TextsService;
 use App\Services\UsersService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use TelegramBot\Api\Types\Inline\InlineKeyboardMarkup;
 
 class TelegramController extends Controller
@@ -154,24 +155,22 @@ class TelegramController extends Controller
 
             $user = User::query()
                 ->where('chat', (string)$chat['id'])
-                ->where('type', 'telegram')
                 ->first();
 
             if (!$user) {
-
                 $user = User::create([
                     'name' => $this->getChatName($chat),
                     'username' => array_key_exists('username', $chat) ? $chat['username'] : null,
                     'chat' => (string)$chat['id'],
                     'picture' => null,
+                    'type' => 'telegram'
                 ]);
 
                 $this->statisticService->onRegister($user);
                 $this->statisticService->onActivity($user);
 
                 DownloadUserPicture::dispatch($user)->onQueue('telegram');
-
-            }else{
+            } else {
 
                 if($user->is_banned){
                     throw new NotAllowForBannedException;
@@ -184,15 +183,12 @@ class TelegramController extends Controller
                 $user->last_activity_at = now();
                 $user->is_alive = true;
                 $user->died_at = null;
+                $user->type = 'telegram';
                 $user->save();
 
             }
 
-
-
             return $user;
-
-
         });
 
     }
@@ -391,6 +387,22 @@ class TelegramController extends Controller
             }
 
             return true;
+        } else if(str_starts_with($command, 'synchronization')) {
+            $maxChat = explode('#', $command)[1] ?? null;
+
+            if(!filled($maxChat)) {
+                $this->telegramService->send($user, "Не верная команда синхронизации. Пример правильной команды: /synchronization#12345678911221");
+                return;
+            }
+
+            $response = $this->userService->synchronizationWithMax($user, $maxChat);
+
+            if($response) {
+                $this->telegramService->send($user, "Синхронизация завершена! \n" .
+                    "Перезапустите приложение MAX для корректной работы");
+            } else {
+                $this->telegramService->send($user, "Не правильный набор данных или синхронизация была совершена ранее");   
+            }
         }
 
 
@@ -844,29 +856,24 @@ class TelegramController extends Controller
 
         }
 
-        if($method === 'buy'){
-
+        if($method === 'buy') {
             $this->telegramService->removeReplyMarkup($user, $mid);
 
             if($user->meta_is_buy || $this->optionsService->get('following_enabled')) {
 
                 if(count($args)) {
                     $this->telegramBaseService->sendTariffs($user, (string)$args[0]);
-                }else{
+                } else {
                     $this->telegramBaseService->sendTariffModes($user);
                 }
-
-            }else{
+            } else {
                 $this->telegramWelcomeService->sendPreRegistrationAnnouncement($user);
             }
 
-
-
             return true;
-
         }
 
-        if($method === 'testing'){
+        if($method === 'testing') {
 
             if($user->is_test_completed){
 

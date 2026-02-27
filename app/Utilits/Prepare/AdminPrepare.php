@@ -21,6 +21,7 @@ class AdminPrepare
         return $file->only([
             'id',
             'hash',
+            'max_hash',
             'type',
             'name'
         ]);
@@ -150,7 +151,8 @@ class AdminPrepare
             'messages_count',
             'errors_count',
             'stages',
-            'tariffs'
+            'tariffs',
+            'type'
         ]);
     }
 

@@ -123,18 +123,19 @@ class UsersController extends Controller
 
     public function edit(Request $request, User $user) : void
     {
-
         $data = $request->validate([
             'tariff_id' => ['nullable', 'integer', 'exists:tariffs,id'],
             'tariff_expired_at' => ['required', 'date']
         ]);
+
+        $user->first_payment_at = $user->first_payment_at ?? now();
+        $user-> meta_is_buy = true;
 
         $user->tariff_id = Arr::get($data, 'tariff_id') ?: null;
         $user->tariff_expired_at = $data['tariff_expired_at'];
         $user->spam_stage = 0;
         $user->last_spam_at = null;
         $user->save();
-
     }
 
     public function inviteSecondStair(Request $request, User $user) : void
@@ -177,6 +178,10 @@ class UsersController extends Controller
         ]);
 
         $tariff = Tariff::query()->find($data['tariff_id']);
+
+        $user->update([
+            'offer_ready' => true
+        ]);
 
         SendOffer::dispatch($user, $tariff)->onQueue('telegram');
 

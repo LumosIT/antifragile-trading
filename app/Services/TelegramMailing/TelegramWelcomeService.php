@@ -554,12 +554,10 @@ class TelegramWelcomeService
 
     public function sendSpamBlock(User $user, Post $post) : Message
     {
-
         $text = $this->postsService->normalize($post->value);
 
-        if($post->file_id){
-
-            switch($post->file->type){
+        if($post->file_id) {
+            switch($post->file->type) {
                 case FileTypes::PHOTO:
                     return $this->telegramService->sendPhoto($user, $post->file->hash, $text);
                 case FileTypes::VIDEO:
@@ -570,10 +568,9 @@ class TelegramWelcomeService
                     return $this->telegramService->sendFile($user, $post->file->hash, $text);
             }
 
-        }else{
+        } else {
             return $this->telegramService->send($user, $text);
         }
-
     }
 
 }

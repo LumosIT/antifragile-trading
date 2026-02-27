@@ -58,4 +58,36 @@ class UsersService
     }
 
 
+    //user - tg, another - max
+    public function synchronizationWithMax(User $user, int $id): bool
+    {
+        if(filled($user->max_chat)) {
+            return false;
+        }
+
+        if($user->type == 'max') {
+            return false;
+         }
+
+        $anotherUser = User::query()
+            ->where('type', 'max')
+            ->where('max_chat', $id)
+            ->first();
+
+        if(!$anotherUser) {
+            return false;
+        }
+
+        $user->update([
+            'max_chat' => $anotherUser->max_chat,
+            'max_user_id' => $anotherUser->max_user_id,
+            'start_key' => 'profile',
+            'meta_is_buy' => true,
+            'meta_is_pre_form_filled' => true,
+        ]);
+
+        $anotherUser->delete();
+
+        return true;
+    }
 }

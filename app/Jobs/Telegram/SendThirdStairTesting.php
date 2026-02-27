@@ -27,6 +27,10 @@ class SendThirdStairTesting implements ShouldQueue
 
     public function handle(TelegramUpgradeService $telegramUpgradeService)
     {
-        $telegramUpgradeService->sendInvite($this->user);
+        if($this->user->type === 'telegram') {
+            $telegramUpgradeService->sendInvite($this->user);
+        } else {
+            $telegramUpgradeService->sendMaxInvite($this->user);
+        }
     }
 }

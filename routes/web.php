@@ -4,6 +4,14 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\ViewsController;
 use Illuminate\Support\Facades\Route;
 use App\Consts\Permissions;
+use App\Models\File;
+use App\Models\Mailing;
+use App\Models\Post;
+use App\Models\Tariff;
+use App\Models\User;
+use App\Services\MaxMailing\MaxBaseService;
+use App\Services\MaxService;
+use App\Services\OptionsService;
 
 Route::get('/', function(){
     return redirect()->route('admin.profile');
@@ -163,3 +171,8 @@ Route::as('.')->group(function(){
     });
 });
 
+Route::get('/test', function() {
+    dd(File::where('id', '107')->update([
+        'max_hash' => 'f9LHodD0cOIuGw1ICxBcRw8gFzX1ySHiCsbNIjJiA1t7_SZg-aI7glRLIP9K7KBBniWPhSLiHypyV2KaANoL'
+    ]));
+});

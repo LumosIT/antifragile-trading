@@ -8,16 +8,21 @@ use App\Models\Application;
 use App\Models\Order;
 use App\Models\Promocode;
 use App\Models\Tariff;
+use App\Models\User;
 use App\Services\CloudPaymentsService;
+use App\Services\MaxMailing\MaxBaseService;
 use App\Services\OptionsService;
 use App\Services\PromocodesService;
+use App\Services\TelegramMailing\TelegramUpgradeService;
 use App\Services\TelegramMailing\TelegramWelcomeService;
 use App\Services\TelegramService;
 use App\Utilits\Traits\Auth\UserGuard;
+use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class PublicController extends Controller
@@ -117,6 +122,7 @@ class PublicController extends Controller
                 $user->phone = $phone;
                 $user->stage = UserStages::COMPLETE_PRE_FORM;
                 $user->meta_is_pre_form_filled = true;
+                $user->balance = 5000;
                 $user->save();
 
                 $application = Application::create([
@@ -219,14 +225,40 @@ class PublicController extends Controller
 
     public function redirect()
     {
-
         $username = $this->telegramService->getUsername();
 
         return redirect()->to(
             'https://t.me/' . $username
         );
-
     }
 
+    public function showTest(Request $request, User $user)
+    {
+        $service = app(MaxBaseService::class);
+        $service->sendBillToThirdStep($this->user());
+        if($this->user()->is_test_completed) {
+            return view('public.third-step-testing', [
+                'completed' => true
+            ]);
+        }
 
+        if($this->user()->test_started_at && $this->user()->test_started_at >= now()->subDays(30)) {
+            return view('public.third-step-testing', [
+                'next_try' => Carbon::parse($this->user()->test_started_at)->addDays(30)->format('Y-m-d H:i:s')
+            ]);
+        }
+
+        $service = app(TelegramUpgradeService::class);
+        
+        $questions = [];
+
+        for ($i = 0; $i < $service->getQuestionsCount(); $i++) {
+            $questions[] = $service->getQuestion($i);
+        }
+
+        return view('public.third-step-testing', [
+            'questions' => $questions,
+            'auth_id' => Auth::id()
+        ]);
+    }
 }

@@ -128,6 +128,16 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="row">
+                        <div class="col-3">
+                            <select class="form-control" name="type" id="type">
+                                <option value="all" selected>Все платформы</option>
+                                <option value="telegram">Telegram</option>
+                                <option value="max">MAX</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-footer">
                     <div class="d-flex align-items-center justify-content-end">

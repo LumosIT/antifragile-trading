@@ -6,6 +6,7 @@
 namespace App\Jobs\Telegram;
 
 use App\Models\User;
+use App\Services\MaxMailing\MaxBaseService;
 use App\Services\TelegramMailing\TelegramBaseService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -25,9 +26,15 @@ class KickFromChannels implements ShouldQueue
         $this->user = $user;
     }
 
-    public function handle(TelegramBaseService $telegramBaseService)
+    public function handle(TelegramBaseService $telegramBaseService, MaxBaseService $maxBaseService)
     {
-        $telegramBaseService->kickFromAllChannels($this->user);
-        $telegramBaseService->sendKickMessage($this->user);
+        if($this->user->type == 'telegram') {
+            $telegramBaseService->kickFromAllChannels($this->user);
+            $telegramBaseService->sendKickMessage($this->user);
+        } else {
+            $maxBaseService->kickUserFromChannel($this->user, '-70931186387659');
+            $maxBaseService->kickUserFromChannel($this->user, '-71321808014027');
+            $maxBaseService->sendKickMessage($this->user);
+        }
     }
 }

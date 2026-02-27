@@ -10,6 +10,7 @@ class File extends Model
     use HasFactory;
 
     protected $fillable = [
+        'max_hash',
         'hash',
         'type',
         'name'

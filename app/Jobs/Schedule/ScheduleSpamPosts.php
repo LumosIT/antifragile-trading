@@ -6,6 +6,7 @@ use App\Consts\PostTypes;
 use App\Consts\TariffModes;
 use App\Models\Post;
 use App\Models\User;
+use App\Services\MaxMailing\MaxBaseService;
 use App\Services\OptionsService;
 use App\Services\TelegramMailing\TelegramWelcomeService;
 use Carbon\Carbon;
@@ -125,7 +126,7 @@ class ScheduleSpamPosts implements ShouldQueue
 
     }
 
-    public function handle(TelegramWelcomeService $telegramWelcomeService)
+    public function handle(TelegramWelcomeService $telegramWelcomeService, MaxBaseService $maxBaseService)
     {
 
         $now = now();
@@ -137,9 +138,13 @@ class ScheduleSpamPosts implements ShouldQueue
             $i = 0;
             foreach ($users as $user) {
 
-                try{
-                    $telegramWelcomeService->sendSpamBlock($user, $post);
-                }catch (\Throwable $e){
+                try {
+                    if($user->type === 'telegram') {
+                        $telegramWelcomeService->sendSpamBlock($user, $post);
+                    } else {
+                        $maxBaseService->sendSpamBlock($user, $post);
+                    }
+                } catch (\Throwable $e){
                     Log::error($e);
                 }
 

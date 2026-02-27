@@ -41,12 +41,12 @@ class ScheduleCheckExpiredSubscriptions implements ShouldQueue
          * Подписки у которых день назад истек срок
          */
         $subscriptions = Subscription::query()
-            ->where('next_payment_at', now()->subDays($this->getAllowedDelayDays()))
+            ->where('next_payment_at', '<', now()->subDays($this->getAllowedDelayDays()))
             ->where('status', SubscriptionStatuses::ACTIVE)
             ->lazyById(10);
 
         foreach($subscriptions as $subscription){
-            $subscriptionsService->stop($subscription);
+            $subscriptionsService->stop($subscription, false);
         }
 
         /**
@@ -55,10 +55,6 @@ class ScheduleCheckExpiredSubscriptions implements ShouldQueue
         $users = User::query()
             ->whereNotNull('tariff_id')
             ->where(function($query){
-                $query->orWhere(function($subQuery){
-                    $subQuery->where('tariff_expired_at', '<', now()->subDays($this->getAllowedDelayDays()));
-                    $subQuery->whereHas('activeSubscription');
-                });
                 $query->orWhere(function($subQuery){
                     $subQuery->where('tariff_expired_at', '<', now());
                     $subQuery->whereDoesntHave('activeSubscription');

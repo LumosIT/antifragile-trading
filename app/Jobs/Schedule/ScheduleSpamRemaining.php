@@ -47,6 +47,7 @@ class ScheduleSpamRemaining implements ShouldQueue
 
         $users = User::query()
             ->alive()
+            ->where('type', 'telegram')
             ->where('meta_is_pre_form_filled', false)
             ->where('meta_is_buy', false)
             ->where('start_key', '!=', 'end')

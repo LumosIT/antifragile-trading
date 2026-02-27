@@ -54,6 +54,10 @@ class User extends Authenticatable
         'meta_is_pre_form_filled',
 
         'type',
+        'max_user_id',
+        'offer_ready',
+        'invite_in_test',
+        'max_chat'
     ];
 
     protected $attributes = [
@@ -86,6 +90,7 @@ class User extends Authenticatable
         'meta_is_accept_rules' => 'boolean',
         'meta_is_buy' => 'boolean',
         'meta_is_pre_form_filled' => 'boolean',
+        'invite_in_test' => 'boolean',
         'last_activity_at' => 'datetime',
         'tariff_expired_at' => 'datetime',
         'first_payment_at' => 'datetime',
@@ -159,5 +164,7 @@ class User extends Authenticatable
         return $query->where('meta_is_buy', true);
     }
 
-
+    public function getTestStartetTime() {
+        return $this->test_started_at;
+    }
 }

@@ -60,9 +60,17 @@
                     width: 150,
                     sortable: true,
                     data(row){
-
                         return `<span class="text-success">${row.messages_count}</span>/<span class="text-danger">${row.errors_count}</span> из <span>${row.users_count}</span>`;
 
+                    }
+                },
+                {
+                    name : 'Платформа',
+                    code : 'type',
+                    width: 150,
+                    sortable: true,
+                    data(row) {
+                        return row.type == 'all' ? 'Везде' : row.type;
                     }
                 },
                 {

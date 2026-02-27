@@ -27,7 +27,6 @@ class SendRestartWarning implements ShouldQueue
 
     public function handle(TelegramBaseService $telegramBaseService)
     {
-
         /**
          * //@TODO костыль для петра
          */

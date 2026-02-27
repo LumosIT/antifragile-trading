@@ -15,6 +15,7 @@ class AddUserTypeInUsersTable extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->string('type')->default('telegram');
+            $table->string('max_user_id')->nullable();
         });
     }
 
@@ -26,7 +27,7 @@ class AddUserTypeInUsersTable extends Migration
     public function down()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('type');
+            $table->dropColumn(['type', 'max_user_id']);
         });
     }
 }

@@ -2,8 +2,11 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PublicController;
 
-Route::as('.')->group(function () {
+Route::get('/', function() {
+    return redirect('/admin/profile');
+});
 
+Route::as('.')->group(function () {
     Route::middleware('auth:user')->group(function () {
 
         Route::prefix('/pre-registration')->as('pre-registration')->group(function () {
@@ -16,8 +19,10 @@ Route::as('.')->group(function () {
             Route::post('/', [PublicController::class, 'payForm']);
         });
 
+        Route::prefix('/testing')->as('testing')->group(function() {
+            Route::get('/', [PublicController::class, 'showTest']);
+        });
     });
 
     Route::get('/redirect', [PublicController::class, 'redirect'])->name('redirect');
-
 });

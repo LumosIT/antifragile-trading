@@ -28,6 +28,10 @@ class RouteServiceProvider extends ServiceProvider
         $this->routes(function () {
 
             Route::middleware('public')
+                ->namespace($this->namespace)
+                ->group(base_path('routes/max.php'));
+
+            Route::middleware('public')
                 ->as('public')
                 ->namespace($this->namespace)
                 ->group(base_path('routes/public.php'));

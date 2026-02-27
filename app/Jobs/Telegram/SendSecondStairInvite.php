@@ -7,6 +7,7 @@ namespace App\Jobs\Telegram;
 
 use App\Models\Order;
 use App\Models\User;
+use App\Services\MaxMailing\MaxBaseService;
 use App\Services\TelegramMailing\TelegramBaseService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -28,8 +29,12 @@ class SendSecondStairInvite implements ShouldQueue
     }
 
 
-    public function handle(TelegramBaseService $telegramBaseService)
+    public function handle(TelegramBaseService $telegramBaseService, MaxBaseService $maxBaseService)
     {
-        $telegramBaseService->sendInviteToSecondStair($this->user, $this->order);
+        if($this->user->type === 'telegram') {
+            $telegramBaseService->sendInviteToSecondStair($this->user, $this->order);
+        } else {
+            $maxBaseService->sendInviteTochannel($this->user, $this->order);
+        }
     }
 }

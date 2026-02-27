@@ -6,6 +6,7 @@
 namespace App\Jobs\Telegram;
 
 use App\Models\User;
+use App\Services\MaxMailing\MaxBaseService;
 use App\Services\TelegramMailing\TelegramBaseService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -26,9 +27,12 @@ class SendPaymentReminder implements ShouldQueue
     }
 
 
-
-    public function handle(TelegramBaseService $telegramBaseService)
+    public function handle(TelegramBaseService $telegramBaseService, MaxBaseService $maxBaseService)
     {
-        $telegramBaseService->sendPaymentReminder($this->user);
+        if($this->user->type === 'telegram') {
+            $telegramBaseService->sendPaymentReminder($this->user);
+        } else {
+            $maxBaseService->sendPaymentReminder($this->user);
+        }
     }
 }

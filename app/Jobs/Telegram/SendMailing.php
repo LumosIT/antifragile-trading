@@ -11,6 +11,7 @@ use App\Exceptions\Mailing\MailingWasStopedException;
 use App\Models\File;
 use App\Models\Mailing;
 use App\Models\User;
+use App\Services\MaxService;
 use App\Services\TelegramService;
 use App\Services\TextsService;
 use App\Utilits\Telegram\InputMediaDocument;
@@ -31,6 +32,7 @@ class SendMailing implements ShouldQueue
     protected $mailing;
     protected $textsService;
     protected $telegramService;
+    protected $maxService;
 
     public function __construct(Mailing $mailing)
     {
@@ -53,11 +55,8 @@ class SendMailing implements ShouldQueue
         return 10;
     }
 
-
-
     protected function getQuery()
     {
-
         $query = User::query()
             ->alive()
             ->whereIn('stage', $this->mailing->stages)
@@ -65,7 +64,7 @@ class SendMailing implements ShouldQueue
 
                 $query->whereIn('tariff_id', $this->mailing->tariffs);
 
-                if(in_array(0, $this->mailing->tariffs)){
+                if(in_array(0, $this->mailing->tariffs)) {
                     $query->orWhereNull('tariff_id');
                 }
 
@@ -78,13 +77,16 @@ class SendMailing implements ShouldQueue
             $query->where('id', '<', $this->mailing->last_user_id);
         }
 
+        if($this->mailing->type != 'all') {
+            $query->where('type', $this->mailing->type);
+        }  
+        
         return $query;
 
     }
 
     protected function getButtons() : ?InlineKeyboardMarkup
     {
-
         $buttons = [];
 
         if(in_array('buy2', $this->mailing->buttons)){
@@ -106,71 +108,82 @@ class SendMailing implements ShouldQueue
         }
 
         return count($buttons) ? new InlineKeyboardMarkup($buttons) : null;
-
     }
 
     protected function sendMessage(User $user)
     {
-
         $text = $this->textsService->normalize($this->mailing->text);
         $buttons = $this->getButtons();
 
         $files_count = $this->mailing->files->count();
 
-        if(!$files_count){
-            return $this->telegramService->send($user, $text, $buttons);
-        }elseif($files_count === 1){
-
+        if(!$files_count) {
+            if($user->type === 'telegram') {
+                return $this->telegramService->send($user, $text, $buttons);
+            } else {
+                return $this->maxService->sendMessage($user->max_chat, $text);
+            }
+        } elseif ($files_count === 1) {
             $file = $this->mailing->files->first();
 
-            if($file->type === FileTypes::VIDEO) {
-                return $this->telegramService->sendVideo($user, $file->hash, $text, $buttons);
-            }elseif($file->type === FileTypes::PHOTO){
-                return $this->telegramService->sendPhoto($user, $file->hash, $text, $buttons);
-            }elseif($file->type === FileTypes::VOICE){
-                return $this->telegramService->sendVoice($user, $file->hash, $text, $buttons);
-            }else{
-                return $this->telegramService->sendFile($user, $file->hash, $text, $buttons);
+            if($user->type === 'telegram') {
+                if($file->type === FileTypes::VIDEO) {
+                    return $this->telegramService->sendVideo($user, $file->hash, $text, $buttons);
+                } elseif ($file->type === FileTypes::PHOTO){
+                    return $this->telegramService->sendPhoto($user, $file->hash, $text, $buttons);
+                } elseif ($file->type === FileTypes::VOICE){
+                    return $this->telegramService->sendVoice($user, $file->hash, $text, $buttons);
+                } else {
+                    return $this->telegramService->sendFile($user, $file->hash, $text, $buttons);
+                }
+            } else {
+                switch($file->type) {
+                    case FileTypes::DOCUMENT:
+                        return $this->maxService->sendFile($user->max_chat, $file->max_hash, $text, 'file');
+                    case FileTypes::VIDEO:
+                        return $this->maxService->sendFile($user->max_chat, $file->max_hash, $text, 'video');
+                    case FileTypes::PHOTO:
+                        return $this->maxService->sendImage($user->max_chat, $file->max_hash, $text);
+                    default:
+                        return $this->maxService->sendMessage($user->max_chat, $text);
+                }
             }
 
-        }else{
-
+        } else {
             $medias = new ArrayOfInputMedia();
             foreach($this->mailing->files as $file){
+                if($user->type === 'telegram') {
+                    if($file->type === FileTypes::VIDEO){
+                        $media = new InputMediaVideo($file->hash);
+                    }elseif($file->type === FileTypes::PHOTO){
+                        $media = new InputMediaPhoto($file->hash);
+                    }else{
+                        $media = new InputMediaDocument($file->hash);
+                    }
 
-                if($file->type === FileTypes::VIDEO){
-                    $media = new InputMediaVideo($file->hash);
-                }elseif($file->type === FileTypes::PHOTO){
-                    $media = new InputMediaPhoto($file->hash);
-                }else{
-                    $media = new InputMediaDocument($file->hash);
+                    $medias->addItem($media);
+                } else {
+                    return $this->maxService->sendFile($user->max_chat, $file->max_hash, $text);
                 }
-
-                $medias->addItem($media);
-
             }
 
-            if(mb_strlen($text) > 1024 || $buttons){
+            if($user->type === 'telegram') {
+                if(mb_strlen($text) > 1024 || $buttons) {
+                    $this->telegramService->sendGallery($user, $medias);
 
-                $this->telegramService->sendGallery($user, $medias);
-
-                return $this->telegramService->send($user, $text, $buttons);
-
-            }else{
-                return $this->telegramService->sendGallery($user, $medias, $text);
+                    return $this->telegramService->send($user, $text, $buttons);
+                } else {
+                    return $this->telegramService->sendGallery($user, $medias, $text);
+                }
             }
-
-
         }
-
-
     }
 
-    public function handle(TextsService $textsService, TelegramService $telegramService)
+    public function handle(TextsService $textsService, TelegramService $telegramService, MaxService $maxService)
     {
-
         $this->textsService = $textsService;
         $this->telegramService = $telegramService;
+        $this->maxService = $maxService;
 
         $users = $this->getQuery()->lazyByIdDesc(10);
 
@@ -183,8 +196,6 @@ class SendMailing implements ShouldQueue
         $e = $this->mailing->errors_count;
 
         foreach($users as $user) {
-
-            //Каждые 10 юзеров
             if(!(++$c % $this->getDelayInterval())){
 
                 $this->mailing->messages_count = $i;
@@ -194,7 +205,7 @@ class SendMailing implements ShouldQueue
 
                 $this->mailing->refresh();
 
-                if($this->mailing->status !== MailingStatuses::IN_PROGRESS){
+                if($this->mailing->status !== MailingStatuses::IN_PROGRESS) {
                     throw new MailingWasStopedException;
                 }
 
@@ -203,18 +214,11 @@ class SendMailing implements ShouldQueue
             }
 
             try{
-
                 $this->sendMessage($user);
-
                 $i++;
-
-            }catch (\Throwable $exception) {
-
+            } catch (\Throwable $exception) {
                 $e++;
-
             }
-
-
         }
 
         $this->mailing->status = MailingStatuses::FINISHED;
@@ -222,7 +226,6 @@ class SendMailing implements ShouldQueue
         $this->mailing->errors_count = $e;
         $this->mailing->users_count = $i + $e;
         $this->mailing->save();
-
     }
 
 }

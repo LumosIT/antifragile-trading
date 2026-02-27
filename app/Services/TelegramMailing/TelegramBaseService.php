@@ -418,7 +418,7 @@ class TelegramBaseService
     {
         return $this->telegramService->send(
             $user,
-            $this->telegramService->get('subscribe_cancelation')
+            $this->textsService->get('subscribe_cancelation')
         );
     }
 
@@ -581,13 +581,16 @@ class TelegramBaseService
         );
     }
 
-    public function sendRestartWarning(User $user) : Message
+    public function sendRestartWarning(User $user)
     {
-        return $this->telegramService->send(
-            $user,
-            '⚠️ Вам необходимо перезапустить бота: /start',
-            new ReplyKeyboardRemove(true)
-        );
+        try {
+            return $this->telegramService->send(
+                $user,
+                '⚠️ Вам необходимо перезапустить бота: /start',
+                new ReplyKeyboardRemove(true)
+            );
+        } catch (\Throwable $e) {
+        }
     }
 
     public function kickFromChannel(User $user, string $channel) : void

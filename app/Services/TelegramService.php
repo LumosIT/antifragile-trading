@@ -21,6 +21,9 @@ class TelegramService
         $this->bot = new BotApi(
             $optionsService->get('telegram_bot_token')
         );
+
+        $this->bot->setCurlOption(CURLOPT_TIMEOUT, 60);
+        $this->bot->setCurlOption(CURLOPT_CONNECTTIMEOUT, 60);
     }
 
     public function send(User $user, string $message, $markup = null, ?string $mid = null) : Message

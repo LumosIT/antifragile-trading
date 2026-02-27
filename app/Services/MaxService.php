@@ -2,9 +2,7 @@
 
 namespace App\Services;
 
-use App\Exceptions\Telegram\NotAllowForBannedException;
-use App\Models\User;
-use Illuminate\Support\Facades\DB;
+use CURLFile;
 use Illuminate\Support\Facades\Log;
 
 class MaxService
@@ -14,13 +12,15 @@ class MaxService
     public ?string $message;
     public ?string $firstName;
     public ?string $lastName;
-    public string $userId;
-    public StatisticService $statisticService;
+    public string $chat;
 
-    public function __construct($token)
+    public function __construct($token = null)
     {
-        $this->token = $token;
-        $this->statisticService = new StatisticService();
+        if(isset($token)) {
+            $this->token = $token;
+        } else {
+            $this->token = config('max.token');
+        }
     }
 
     public function setWebhook(string $webhookUrl, string $secret) : array
@@ -30,8 +30,19 @@ class MaxService
         $data = [
             "url" => $webhookUrl,
             "update_types" => [
+                "message_callback",
                 "message_created",
-                "bot_started"
+                // "message_edited",
+                // "bot_added",
+                // "bot_removed",
+                // "dialog_muted",
+                // "dialog_unmuted",
+                // "dialog_cleared",
+                // "user_added",
+                // "user_removed",
+                // "bot_stopped",
+                "bot_started",
+                // "chat_title_changed",
             ],
             "secret" => $secret
         ];
@@ -59,12 +70,14 @@ class MaxService
         ];
     }
 
-    function sendMessage(string $userId, string $text, array $keyboard = []): array
+    function sendMessage(string $chat, string $text, array $keyboard = [], $parseMode = 'html'): array
     {
-        $url = "https://platform-api.max.ru/messages?user_id=" . $userId;
+        $url = "https://platform-api.max.ru/messages?chat_id=" . $chat;
 
         $data = [
-            "text" => $text
+            "text" => $text,
+            "format" => $parseMode,
+            "disable_link_preview" => false
         ];
 
         if (!empty($keyboard)) {
@@ -74,6 +87,55 @@ class MaxService
                     "payload" => [
                         "buttons" => $keyboard
                     ]
+                ],
+            ];
+        }
+
+        $ch = curl_init($url);
+
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => [
+                "Authorization: $this->token",
+                "Content-Type: application/json"
+            ],
+            CURLOPT_POSTFIELDS => json_encode($data, JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $response = curl_exec($ch);
+        $error = curl_error($ch);
+
+        curl_close($ch);
+
+        return [
+            'response' => json_decode($response, true),
+            'error' => $error
+        ];
+    }
+
+    function sendImage(string $chat, string $imageUrl, string $caption = '', array $keyboard = []): array
+    {
+        $url = "https://platform-api.max.ru/messages?chat_id=" . $chat;
+
+        $data = [
+            "text" => $caption,
+            "format" => "html",
+            "attachments" => [
+                [
+                    "type" => "image",
+                    "payload" => [
+                        "url" => $imageUrl
+                    ]
+                ]
+            ]
+        ];
+
+        if (!empty($keyboard)) {
+            $data["attachments"][] = [
+                "type" => "inline_keyboard",
+                "payload" => [
+                    "buttons" => $keyboard
                 ]
             ];
         }
@@ -101,50 +163,110 @@ class MaxService
         ];
     }
 
-    function parseMaxWebhook(array $data): void
-    {
-        $this->message = $data['message']['body']['text'] ?? null;
-        $this->firstName = $data['message']['sender']['first_name'] ?? null;
-        $this->lastName = $data['message']['sender']['last_name'] ?? null;
-        $this->userId = $data['message']['sender']['user_id'] ?? null;
+    public function kickUserFromChannel($user, $chatId = "-70931186387659") {
+        $userId = $user->max_user_id;
+
+        $url = "https://platform-api.max.ru/chats/$chatId/members?user_id=$userId";
+
+        $ch = curl_init($url);
+
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CUSTOMREQUEST => "DELETE",
+            CURLOPT_HTTPHEADER => [
+                "Authorization: $this->token",
+                "Content-Type: application/json"
+            ],
+        ]);
+
+        $response = curl_exec($ch);
+        $error = curl_error($ch);
+
+        Log::info('Kick User', [
+            $response,
+            $error
+        ]);
+
+        curl_close($ch);
     }
 
-    public function getOrCreateUser(): User
+    public function parseSubscribers():array
     {
-        return DB::transaction(function () {
-            $user = User::query()
-                ->where('chat', (string)$this->userId)
-                ->where('type', 'max')
-                ->first();
+        $limit = 100;
+        $marker = null;
+        $allMembers = [];
 
-            if (!$user) {
-                $user = User::create([
-                    'name' => $this->firstName,
-                    'username' => $this->lastName,
-                    'chat' => $this->userId,
-                    'picture' => null,
-                    'type' => 'max',
-                ]);
-                $this->statisticService->onRegister($user);
-                $this->statisticService->onActivity($user);
-            } else {
-                if($user->is_banned) {
-                    throw new NotAllowForBannedException;
-                }
-                if($user->last_activity_at->format('d.m.Y') !== now()->format('d.m.Y')) {
-                    $this->statisticService->onActivity($user);
-                }
+        do {
+            $url = "https://platform-api.max.ru/chats/-70931186387659/members?limit=$limit";
 
-                $user->last_activity_at = now();
-                $user->is_alive = true;
-                $user->died_at = null;
-                $user->save();
-
+            if ($marker) {
+                $url .= "&marker=" . urlencode($marker);
             }
 
-            return $user;
-        });
+            $ch = curl_init($url);
 
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER => [
+                    "Authorization: " . $this->token
+                ],
+            ]);
+
+            $response = curl_exec($ch);
+            curl_close($ch);
+
+            $data = json_decode($response, true);
+
+            if (!isset($data['members'])) {
+                break;
+            }
+
+            $allMembers = array_merge($allMembers, $data['members']);
+
+            $marker = $data['marker'] ?? null;
+
+        } while ($marker);
+
+        return $allMembers;
     }
 
+    public function sendFile(string $chat, string $fileToken, string $caption, $type = 'file'): array
+    {
+        $url = "https://platform-api.max.ru/messages?chat_id=" . $chat;
+
+        $data = [
+            "text" => $caption,
+            "format" => "html",
+            "attachments" => [
+                [
+                    "type" => $type,
+                    "payload" => [
+                        "token" => $fileToken
+                    ]
+                ]
+            ]
+        ];
+
+        $ch = curl_init($url);
+
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => [
+                "Authorization: $this->token",
+                "Content-Type: application/json"
+            ],
+            CURLOPT_POSTFIELDS => json_encode($data, JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $response = curl_exec($ch);
+        $error = curl_error($ch);
+
+        curl_close($ch);
+
+        return [
+            'response' => json_decode($response, true),
+            'error' => $error
+        ];
+    }
 }

@@ -145,29 +145,26 @@ class CloudPaymentsController extends Controller
         /**
          * Применим промокод, если он есть
          */
-        if($order->promocode_id){
+        if($order->promocode_id) {
 
             /**
              * Цена подписки фиксируется по цене скидки
              */
-            if(!$order->promocode->only_first_payment){
+            if(!$order->promocode->only_first_payment) {
                 $subscription_amount = $order->amount;
             }
 
             /**
              * Промокод добавляет дополнительное время
              */
-            if($order->promocode->bonus_duration){
+            if($order->promocode->bonus_duration) {
                 $next_payment_date->addSeconds(
                     $this->promocodesService->getBonusSeconds($order->promocode)
                 );
             }
-
         }
 
-
         if($user->tariff_id) {
-
             /**
              * Перерасчет остатка
              */
@@ -175,8 +172,7 @@ class CloudPaymentsController extends Controller
                 $this->getTariffSwitchBonus($user->tariff, $tariff, $user->tariff_expired_at)
             );
 
-        }else{
-
+        } else {
             /**
              * Бонусные баллы дают 1 месяц
              */
@@ -185,17 +181,14 @@ class CloudPaymentsController extends Controller
                 $this->usersService->spendBalance($user, 4900);
 
                 $next_payment_date->addMonth();
-
             }
-
-
         }
 
 
         /**
          * Отменить прошлую подписку на CloudPayments
          */
-        if($user->activeSubscription){
+        if($user->activeSubscription) {
             try {
                 $this->cloudPaymentsService->cancelSubscription($user->activeSubscription->code);
             }catch (\Throwable $e){}
@@ -216,7 +209,7 @@ class CloudPaymentsController extends Controller
 
         DB::transaction(function() use ($token, $tariff, $order, $transaction_id, $user, $cloudData, $card, $next_payment_date, $subscription_amount){
 
-            if(!$user->meta_is_buy){
+            if(!$user->meta_is_buy) {
                 $user-> meta_is_buy = true;
                 $user->first_payment_at = now();
             }
@@ -240,13 +233,13 @@ class CloudPaymentsController extends Controller
              */
             try {
                 $this->promocodesService->use($order->promocode);
-            }catch (\Throwable $e){}
+            } catch (\Throwable $e){}
 
             /**
              * Отменяем старую подписку в базе
              */
-            if($user->activeSubscription){
-                $this->subscriptionsService->stop($user->activeSubscription);
+            if($user->activeSubscription) {
+                $this->subscriptionsService->stop($user->activeSubscription, false);
             }
 
             /**
@@ -280,15 +273,13 @@ class CloudPaymentsController extends Controller
              * Награда партнеру
              */
             if($user->parent_id){
-
                 $this->usersService->depositBalance($user->parent, 2500);
 
                 SendReferralReward::dispatch($user->parent)->onQueue('telegram');
-
             }
 
             /**
-             * Выдаем пригласительные ссылки
+             * Выдаем пригласительные ссылки (TG, MAX)
              */
             if($tariff->mode === TariffModes::FULL) {
                 SendThirdStairInvite::dispatch($user, $order)->onQueue('telegram');
@@ -325,15 +316,8 @@ class CloudPaymentsController extends Controller
 
     }
 
-    /**
-     * Точка входа Route
-     */
     public function webhook(Request $request) : array
     {
-
-        //@TODO check token
-        //Мне похуй, я русский
-
         $json = collect($request->all());
 
         $account_id      = (int)$json->get('AccountId');
@@ -362,6 +346,10 @@ class CloudPaymentsController extends Controller
             throw new \Exception('Wrong user');
         }
 
+        $user->update([
+            'offer_ready' => false
+        ]);
+        
         if(Payment::query()->where('hash', $transaction_id)->exists()){
             return ['code' => 0];
         }

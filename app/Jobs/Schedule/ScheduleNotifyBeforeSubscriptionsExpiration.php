@@ -59,9 +59,9 @@ class ScheduleNotifyBeforeSubscriptionsExpiration implements ShouldQueue
             $user->subscription_notify_at = now();
             $user->save();
 
-            if($user->activeSubscription){
+            if($user->activeSubscription) {
                 SendPaymentReminder::dispatch($user)->onQueue('telegram');
-            }else{
+            } else {
                 SendCancelReminder::dispatch($user)->onQueue('telegram');
             }
 

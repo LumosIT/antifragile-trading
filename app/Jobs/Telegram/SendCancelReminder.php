@@ -6,6 +6,7 @@
 namespace App\Jobs\Telegram;
 
 use App\Models\User;
+use App\Services\MaxMailing\MaxBaseService;
 use App\Services\TelegramMailing\TelegramBaseService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -27,8 +28,12 @@ class SendCancelReminder implements ShouldQueue
 
 
 
-    public function handle(TelegramBaseService $telegramBaseService)
+    public function handle(TelegramBaseService $telegramBaseService, MaxBaseService $maxBaseService)
     {
-        $telegramBaseService->sendCancelReminder($this->user);
+        if($this->user->type === 'telegram') {
+            $telegramBaseService->sendCancelReminder($this->user);
+        } else {
+            $maxBaseService->sendCancelReminder($this->user);
+        }
     }
 }
