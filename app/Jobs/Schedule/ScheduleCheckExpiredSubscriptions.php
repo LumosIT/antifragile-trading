@@ -3,6 +3,8 @@
 namespace App\Jobs\Schedule;
 
 use App\Consts\SubscriptionStatuses;
+use App\Consts\TariffModes;
+use App\Consts\UserStages;
 use App\Jobs\Telegram\KickFromChannels;
 use App\Jobs\Telegram\SendSubscribeCancelation;
 use App\Models\Subscription;
@@ -59,14 +61,12 @@ class ScheduleCheckExpiredSubscriptions implements ShouldQueue
                 $query->where('tariff_expired_at', '<', now());
                 $query->whereDoesntHave('activeSubscription');
             })
+            ->with('tariff')
             ->lazyById(10);
 
         foreach($users as $user){
 
             \DB::transaction(function () use ($subscriptions, $user){
-
-                Log::debug('Kick from channel');
-                Log::debug($user);
 
                 $user->tariff_id = null;
                 $user->tariff_expired_at = null;

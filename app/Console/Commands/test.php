@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Consts\OptionTypes;
 use App\Consts\PostTypes;
+use App\Consts\SubscriptionStatuses;
 use App\Consts\TariffModes;
 use App\Consts\UserStages;
 use App\Jobs\Schedule\ScheduleSpamPosts;
@@ -12,6 +13,7 @@ use App\Jobs\Telegram\SendMailing;
 use App\Models\Application;
 use App\Models\Mailing;
 use App\Models\Post;
+use App\Models\Subscription;
 use App\Models\Text;
 use App\Models\TextGroup;
 use App\Models\User;
@@ -45,9 +47,11 @@ class test extends Command
     public function handle(TelegramService $telegramService, TelegramBaseService $telegramBaseService, OptionsService $optionsService)
     {
 
-       $user = User::find(976);
+//       $user = User::find(976);
+//
+//       $telegramBaseService->sendInviteToSecondStair($user);
 
-       $telegramBaseService->sendInviteToSecondStair($user);
+
 
     }
 }
