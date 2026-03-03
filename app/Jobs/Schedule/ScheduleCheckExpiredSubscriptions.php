@@ -9,6 +9,7 @@ use App\Jobs\Telegram\KickFromChannels;
 use App\Jobs\Telegram\SendSubscribeCancelation;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Services\CloudPaymentsService;
 use App\Services\SubscriptionsService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -37,7 +38,7 @@ class ScheduleCheckExpiredSubscriptions implements ShouldQueue
      * Останавливает истекшие подписки
      * Удаляет из канала пользователей с истекшим сроком тарифа
      */
-    public function handle(SubscriptionsService $subscriptionsService)
+    public function handle(SubscriptionsService $subscriptionsService, CloudPaymentsService $cloudPaymentsService)
     {
 
         /**
@@ -50,6 +51,10 @@ class ScheduleCheckExpiredSubscriptions implements ShouldQueue
 
         foreach($subscriptions as $subscription){
             $subscriptionsService->stop($subscription, false);
+
+            try{
+                $cloudPaymentsService->cancelSubscription($subscriptions->code);
+            }catch (\Throwable $e){}
         }
 
         /**
