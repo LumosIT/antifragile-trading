@@ -534,7 +534,6 @@ class TelegramWelcomeService
 
     public function sendPreRegistrationAnnouncement(User $user) : Message
     {
-
         return $this->telegramService->send(
             $user,
             $this->textsService->get('pre_registration_announcement', [
@@ -549,7 +548,6 @@ class TelegramWelcomeService
                 ]
             ])
         );
-
     }
 
     public function sendSpamBlock(User $user, Post $post) : Message

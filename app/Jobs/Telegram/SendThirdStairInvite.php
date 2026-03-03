@@ -30,10 +30,14 @@ class SendThirdStairInvite implements ShouldQueue
 
     public function handle(TelegramBaseService $telegramBaseService, MaxBaseService $maxBaseService)
     {
-        if($this->user->type === 'telegram') {
+        try {
             $telegramBaseService->sendInviteToThirdStair($this->user, $this->order);
-        } else {
+        } catch (\Throwable $e) {
+        }
+
+        try {
             $maxBaseService->sendInviteToThirdStep($this->user, $this->order);
+        } catch (\Throwable $e) {
         }
     }
 }

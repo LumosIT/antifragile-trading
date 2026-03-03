@@ -70,6 +70,9 @@ function initVueApp(startStep = 1, user, data) {
                 showLightbox: false,
             }
         },
+        mounted() {
+            console.log(this.following_enabled);
+        },
         watch: {
             step(newStep) {
                 if(newStep === 2) this.buttonMessage = 'Принимаю условия';
@@ -117,7 +120,10 @@ function initVueApp(startStep = 1, user, data) {
             },
             onMediaLoaded() {
                 this.mediaLoaded = true;
-            }
+            },
+            showNotification(message, type = 'success') {
+                this.$refs.notification.show(message, type);
+            },
         },
         mounted() {
             document.querySelectorAll('.need-colored').forEach((el, index) => {
@@ -127,6 +133,63 @@ function initVueApp(startStep = 1, user, data) {
             });
 
             setTimeout(() => this.isReady = true, 750);
+        }
+    });
+
+    app.component('app-notification', {
+        template: `
+            <div v-if="visible"
+                class="position-fixed top-0 end-0 p-3"
+                style="z-index: 9999; min-width: 280px;">
+                
+                <div class="toast show align-items-center text-white border-0"
+                    :class="typeClass">
+                    
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            @{{ message }}
+                        </div>
+                        <button type="button"
+                                class="btn-close btn-close-white me-2 m-auto"
+                                @click="hide">
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `,
+        data() {
+            return {
+                visible: false,
+                message: '',
+                type: 'success', // success | error | warning | info
+                timeout: null
+            }
+        },
+        computed: {
+            typeClass() {
+                switch(this.type) {
+                    case 'success': return 'bg-success';
+                    case 'error': return 'bg-danger';
+                    case 'warning': return 'bg-warning text-dark';
+                    default: return 'bg-primary';
+                }
+            }
+        },
+        methods: {
+            show(message, type = 'success', duration = 3000) {
+                this.message = message;
+                this.type = type;
+                this.visible = true;
+
+                if (this.timeout) clearTimeout(this.timeout);
+
+                this.timeout = setTimeout(() => {
+                    this.hide();
+                }, duration);
+            },
+            hide() {
+                this.visible = false;
+            }
         }
     });
 
@@ -278,8 +341,8 @@ function initVueApp(startStep = 1, user, data) {
                     this.subscriptionLoading = true;
 
                     const url = this.activeSubscription
-                        ? `/max/disable-autopaiment?chat=${this.chat}`
-                        : `/max/autopaiment?chat=${this.chat}`;
+                        ? `/max/disable-autopaiment?chat=${this.max_chat}`
+                        : `/max/autopaiment?chat=${this.max_chat}`;
 
                     const res = await fetch(url, {
                         method: 'POST',
@@ -292,13 +355,13 @@ function initVueApp(startStep = 1, user, data) {
 
                     if (data.status) {
                         this.activeSubscription = !this.activeSubscription;
-                        alert(data.message);
+                        this.$root.showNotification(data.message, 'success');
                     } else {
-                        alert(data.message);
+                        this.$root.showNotification(data.message, 'error');
                     }
 
                 } catch (e) {
-                    alert('Ошибка изменения автопродления');
+                    this.$root.showNotification('Ошибка изменения автопродления', 'error');
                 } finally {
                     this.subscriptionLoading = false;
                 }
@@ -322,8 +385,7 @@ function initVueApp(startStep = 1, user, data) {
                     const paymentUrl = await response.text();
                     window.open(paymentUrl, '_blank');
                 } catch (error) {
-                    console.error(error);
-                    alert('Не удалось перейти к оплате. Попробуйте позже.');
+                    this.$root.showNotification('Не удалось перейти к оплате. Попробуйте позже.', 'error');
                 }
             },
 
@@ -340,7 +402,7 @@ function initVueApp(startStep = 1, user, data) {
 
                 <div v-else>
 
-                    <button class="btn btn-outline-light mt-2 mb-2" @click="copyLink">
+                    <button class="btn btn-dark mt-2 mb-2 w-100" @click="copyLink">
                         📋 Скопировать реферальную ссылку
                     </button>
 
@@ -353,7 +415,7 @@ function initVueApp(startStep = 1, user, data) {
                     <div v-if="tariff" class="mt-4">
 
                         <button 
-                            class="btn btn-sm w-100 mb-3 border-secondary text-light bg-transparent hover-dark"
+                            class="btn btn-dark mb-2 w-100"
                             @click="renewTariff">
                             🔄 Продлить тариф вручную
                         </button>
@@ -475,64 +537,65 @@ function initVueApp(startStep = 1, user, data) {
             }
         },
         template: `
-            <div v-if="followingEnabled" class="card need-colored shadow-lg p-4 w-100 d-flex flex-column">
-                <h1 class="text-center">Набор в клуб 257 открыт</h1>
-                <button class="btn btn-success" @click="renewTariff()">Выбрать тариф</button>
-            </div>
-            <div v-else class="card need-colored shadow-lg p-4 w-100 d-flex flex-column">
+            <div v-if="user.tariff_id == null" class="card need-colored shadow-lg p-4 w-100 d-flex flex-column">
+                <div v-if="followingEnabled" class="card need-colored shadow-lg p-4 w-100 d-flex flex-column">
+                    <h1 class="text-center">Набор в клуб 257 открыт</h1>
+                    <button class="btn btn-success" @click="renewTariff()">Выбрать тариф</button>
+                </div>
+                <div v-else class="card need-colored shadow-lg p-4 w-100 d-flex flex-column">
+                    <template v-if="user.meta_is_pre_form_filled">
+                        <h1 class="text-center">Форма успешно заполнена</h1>
+                        <p>Спасибо за заполнение формы, мы свяжемся с вами в ближайшее время.</p>
+                    </template>
 
-                <template v-if="user && user.meta_is_pre_form_filled">
-                    <h1 class="text-center">Форма успешно заполнена</h1>
-                    <p>Спасибо за заполнение формы, мы свяжемся с вами в ближайшее время.</p>
-                </template>
+                    <template v-else>
+                        <h1 class="text-center">Форма не заполнена</h1>
+                        <p>Пожалуйста, заполните форму, чтобы мы могли связаться с вами.</p>
+                        <a class="btn btn-outline-dark" :href="formLink" target="_blank">Заполнить форму</a>
+                    </template>
+                </div>
 
-                <template v-else>
-                    <h1 class="text-center">Форма не заполнена</h1>
-                    <p>Пожалуйста, заполните форму, чтобы мы могли связаться с вами.</p>
-                    <a class="btn btn-outline-dark" :href="formLink" target="_blank">Заполнить форму</a>
-                </template>
-            </div>
-
-            <div v-if="showTariffModal"
-                class="modal fade show d-block"
-                style="background: rgba(0,0,0,0.6);">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content bg-dark text-light border-secondary">
-                        <div class="modal-header border-secondary">
-                            <h5 class="modal-title">Выберите тариф</h5>
-                            <button type="button" 
-                                    class="btn-close btn-close-white"
-                                    @click="showTariffModal = false">
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <div v-for="tariff in tariffs" :key="tariff.id" 
-                                style="background: #fff; border: 1px solid #e2e8f0; 
-                                        border-radius: 12px; padding: 16px; margin-bottom: 12px; 
-                                        display: flex; justify-content: space-between; 
-                                        align-items: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
-                                <div>
-                                    <div style="font-weight: 600; font-size: 16px; margin-bottom: 4px; color:black">
-                                        @{{ tariff.name }}
-                                    </div>
-                                    <div style="color: #4a5568;">
-                                        Цена: <strong>@{{ tariff.price.toLocaleString() }} руб</strong>
-                                    </div>
-                                    <div style="color: #4a5568;">
-                                        Длительность: <strong>@{{ tariff.duration }} дней</strong>
-                                    </div>
-                                </div>
-                                <button style="background: #2563eb; color: #fff; padding: 8px 14px; 
-                                            border-radius: 6px; font-weight: 500; border: none; cursor: pointer;"
-                                        @click="payTariff(tariff.id)">
-                                    Оплатить
+                <div v-if="showTariffModal"
+                    class="modal fade show d-block"
+                    style="background: rgba(0,0,0,0.6);">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content bg-dark text-light border-secondary">
+                            <div class="modal-header border-secondary">
+                                <h5 class="modal-title">Выберите тариф</h5>
+                                <button type="button" 
+                                        class="btn-close btn-close-white"
+                                        @click="showTariffModal = false">
                                 </button>
                             </div>
-                        </div>
-                        <div class="modal-footer border-secondary">
-                            <button class="btn btn-outline-light" @click="showTariffModal = false">
-                                Отмена
-                            </button>
+                            <div class="modal-body">
+                                <div v-for="tariff in tariffs" :key="tariff.id" 
+                                    style="background: #fff; border: 1px solid #e2e8f0; 
+                                            border-radius: 12px; padding: 16px; margin-bottom: 12px; 
+                                            display: flex; justify-content: space-between; 
+                                            align-items: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
+                                    <div>
+                                        <div style="font-weight: 600; font-size: 16px; margin-bottom: 4px; color:black">
+                                            @{{ tariff.name }}
+                                        </div>
+                                        <div style="color: #4a5568;">
+                                            Цена: <strong>@{{ tariff.price.toLocaleString() }} руб</strong>
+                                        </div>
+                                        <div style="color: #4a5568;">
+                                            Длительность: <strong>@{{ tariff.duration }} дней</strong>
+                                        </div>
+                                    </div>
+                                    <button style="background: #2563eb; color: #fff; padding: 8px 14px; 
+                                                border-radius: 6px; font-weight: 500; border: none; cursor: pointer;"
+                                            @click="payTariff(tariff.id)">
+                                        Оплатить
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="modal-footer border-secondary">
+                                <button class="btn btn-outline-light" @click="showTariffModal = false">
+                                    Отмена
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -556,8 +619,7 @@ function initVueApp(startStep = 1, user, data) {
 
                     console.log(data);
                 } catch (e) {
-                    console.error('Ошибка:', e);
-                    alert('Ошибка продления');
+                    this.$root.showNotification('Ошибка при обновлении.', 'error');
                 }
             },
 
@@ -570,7 +632,7 @@ function initVueApp(startStep = 1, user, data) {
                         },
                         body: JSON.stringify({
                             tariff_id: tariffId,
-                            user_id: this.user.id,
+                            user_id: this.$root.user.id,
                         })
                     });
 
@@ -579,8 +641,7 @@ function initVueApp(startStep = 1, user, data) {
                     const paymentUrl = await response.text();
                     window.open(paymentUrl, '_blank');
                 } catch (error) {
-                    console.error(error);
-                    alert('Не удалось перейти к оплате. Попробуйте позже.');
+                    this.$root.showNotification('Не удалось перейти к оплате. Попробуйте позже.', 'error');
                 }
             },
         }

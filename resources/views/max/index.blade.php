@@ -28,6 +28,8 @@
 
 <!-- ===== Vue App ===== -->
 <div id="app" class="container d-flex align-items-center justify-content-center min-vh-100">
+    <app-notification ref="notification"></app-notification>
+    
     <!-- STEP 18 (PROFILE) -->
     <div v-if="isReady" v-cloak>
         <div v-if="step === 18">

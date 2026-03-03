@@ -27,10 +27,12 @@ class SendSubscribeCancelation implements ShouldQueue
 
     public function handle(TelegramBaseService $telegramBaseService, MaxBaseService $maxBaseService)
     {
-        if($this->user->type === 'telegram') {
+        try {
             $telegramBaseService->sendSubscribeCancelation($this->user);
-        } else {
+        } catch (\Throwable $exception) {}
+            
+        try {
             $maxBaseService->sendSubscribeCancelation($this->user);
-        }
+        } catch (\Throwable $exception) {}
     }
 }

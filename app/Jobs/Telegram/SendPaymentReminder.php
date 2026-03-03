@@ -13,6 +13,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class SendPaymentReminder implements ShouldQueue
 {
@@ -29,10 +30,13 @@ class SendPaymentReminder implements ShouldQueue
 
     public function handle(TelegramBaseService $telegramBaseService, MaxBaseService $maxBaseService)
     {
-        if($this->user->type === 'telegram') {
+        try {
             $telegramBaseService->sendPaymentReminder($this->user);
-        } else {
+        } catch (\Throwable $exception) {}
+
+        try {
             $maxBaseService->sendPaymentReminder($this->user);
+        } catch (\Throwable $exception) {
         }
     }
 }

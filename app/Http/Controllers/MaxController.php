@@ -173,9 +173,7 @@ class MaxController extends Controller
     }
 
     public function enableAutoPayment(Request $request) {
-        $user = User::where('type', 'max')
-            ->where('max_chat', $request->chat)
-            ->first();
+        $user = User::where('max_chat', $request->max_chat)->first();
 
         if(!$user) {
             return response()->json([
@@ -234,9 +232,7 @@ class MaxController extends Controller
     }
 
     public function disablaAutoPayment(Request $request) {
-        $user = User::where('type', 'max')
-            ->where('max_chat', $request->chat)
-            ->first();
+        $user = User::where('max_chat', $request->max_chat)->first();
 
         if(!$user) {
             return response()->json([
@@ -329,7 +325,7 @@ class MaxController extends Controller
     public function payTariff(Request $request) {
         $orderService = app(OrdersService::class);
         $tariff = Tariff::find($request->tariff_id);
-        $user = User::where('max_chat', $request->chat)->first();
+        $user = User::where('id', $request->user_id)->first();
 
         $order = Order::create([
             'code' => $orderService->generateUniqueCode(),

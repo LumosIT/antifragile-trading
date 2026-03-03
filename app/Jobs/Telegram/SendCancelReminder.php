@@ -30,10 +30,12 @@ class SendCancelReminder implements ShouldQueue
 
     public function handle(TelegramBaseService $telegramBaseService, MaxBaseService $maxBaseService)
     {
-        if($this->user->type === 'telegram') {
+        try {
             $telegramBaseService->sendCancelReminder($this->user);
-        } else {
+        } catch (\Throwable $exception) {}
+
+        try {
             $maxBaseService->sendCancelReminder($this->user);
-        }
+        } catch (\Throwable $exception) {}
     }
 }

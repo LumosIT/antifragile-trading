@@ -8,6 +8,7 @@ namespace App\Services;
 
 use App\Exceptions\Users\NotEnoughBalanceException;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 class UsersService
 {
@@ -62,19 +63,21 @@ class UsersService
     public function synchronizationWithMax(User $user, int $id): bool
     {
         if(filled($user->max_chat)) {
+            Log::info(1);
             return false;
         }
 
         if($user->type == 'max') {
+            Log::info(2);
             return false;
          }
 
         $anotherUser = User::query()
-            ->where('type', 'max')
             ->where('max_chat', $id)
             ->first();
 
         if(!$anotherUser) {
+            Log::info(3);
             return false;
         }
 

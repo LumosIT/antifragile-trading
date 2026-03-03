@@ -14,6 +14,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class SendSecondStairInvite implements ShouldQueue
 {
@@ -31,10 +32,16 @@ class SendSecondStairInvite implements ShouldQueue
 
     public function handle(TelegramBaseService $telegramBaseService, MaxBaseService $maxBaseService)
     {
-        if($this->user->type === 'telegram') {
+        try {
             $telegramBaseService->sendInviteToSecondStair($this->user, $this->order);
-        } else {
+        } catch (\Throwable $e) {
+            Log::error("Ошибка при отправке приглашения на 2 ступень пользователю {$this->user->id} в Telegram: {$e->getMessage()}");
+        }
+
+        try {
             $maxBaseService->sendInviteTochannel($this->user, $this->order);
+        } catch (\Throwable $e) {
+            Log::error("Ошибка при отправке приглашения на 2 ступень пользователю {$this->user->id} в Max: {$e->getMessage()}");
         }
     }
 }

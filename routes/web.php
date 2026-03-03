@@ -4,8 +4,10 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\ViewsController;
 use Illuminate\Support\Facades\Route;
 use App\Consts\Permissions;
+use App\Jobs\Telegram\SendPaymentReminder;
 use App\Models\File;
 use App\Models\Mailing;
+use App\Models\Order;
 use App\Models\Post;
 use App\Models\Tariff;
 use App\Models\User;
@@ -172,7 +174,7 @@ Route::as('.')->group(function(){
 });
 
 Route::get('/test', function() {
-    dd(File::where('id', '107')->update([
-        'max_hash' => 'f9LHodD0cOIuGw1ICxBcRw8gFzX1ySHiCsbNIjJiA1t7_SZg-aI7glRLIP9K7KBBniWPhSLiHypyV2KaANoL'
-    ]));
+    dd(User::query()
+        ->where('max_user_id', null)
+        ->first());
 });

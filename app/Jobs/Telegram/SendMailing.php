@@ -10,6 +10,7 @@ use App\Consts\MailingStatuses;
 use App\Exceptions\Mailing\MailingWasStopedException;
 use App\Models\File;
 use App\Models\Mailing;
+use App\Models\Tariff;
 use App\Models\User;
 use App\Services\MaxService;
 use App\Services\TelegramService;
@@ -20,6 +21,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 use TelegramBot\Api\Types\Inline\InlineKeyboardMarkup;
 use TelegramBot\Api\Types\InputMedia\ArrayOfInputMedia;
 use TelegramBot\Api\Types\InputMedia\InputMediaPhoto;
@@ -59,6 +61,7 @@ class SendMailing implements ShouldQueue
     {
         $query = User::query()
             ->alive()
+            ->where('id', 2474)
             ->whereIn('stage', $this->mailing->stages)
             ->where(function($query) {
 
@@ -77,12 +80,39 @@ class SendMailing implements ShouldQueue
             $query->where('id', '<', $this->mailing->last_user_id);
         }
 
-        if($this->mailing->type != 'all') {
-            $query->where('type', $this->mailing->type);
+        if($this->mailing->type == 'telegram') {
+            $query->whereNull('max_chat');
         }  
-        
+
+        if($this->mailing->type == 'max') {
+            $query->whereNotNull('max_chat');
+        }  
+
         return $query;
 
+    }
+
+    protected function getMaxButtons(): array
+    {
+        $keyboard = [];
+
+        if(in_array('buy2', $this->mailing->buttons)) {
+            $tariffs = Tariff::where('is_active', true)
+                ->where('mode', 'simple')
+                ->get();
+
+
+            foreach ($tariffs as $tariff) {
+                $keyboard[] = [
+                    [
+                        'type' => 'message',
+                        'text' => "Купить {$tariff->name}",
+                    ]
+                ];
+            }
+        }
+
+        return $keyboard;
     }
 
     protected function getButtons() : ?InlineKeyboardMarkup
@@ -113,67 +143,78 @@ class SendMailing implements ShouldQueue
     protected function sendMessage(User $user)
     {
         $text = $this->textsService->normalize($this->mailing->text);
+        $text = str_replace('{balance}', $user->balance, $text);
         $buttons = $this->getButtons();
-
         $files_count = $this->mailing->files->count();
 
         if(!$files_count) {
-            if($user->type === 'telegram') {
-                return $this->telegramService->send($user, $text, $buttons);
-            } else {
-                return $this->maxService->sendMessage($user->max_chat, $text);
-            }
+            return $this->telegramService->send($user, $text, $buttons);
+
         } elseif ($files_count === 1) {
             $file = $this->mailing->files->first();
-
-            if($user->type === 'telegram') {
-                if($file->type === FileTypes::VIDEO) {
-                    return $this->telegramService->sendVideo($user, $file->hash, $text, $buttons);
-                } elseif ($file->type === FileTypes::PHOTO){
-                    return $this->telegramService->sendPhoto($user, $file->hash, $text, $buttons);
-                } elseif ($file->type === FileTypes::VOICE){
-                    return $this->telegramService->sendVoice($user, $file->hash, $text, $buttons);
-                } else {
-                    return $this->telegramService->sendFile($user, $file->hash, $text, $buttons);
-                }
+            if($file->type === FileTypes::VIDEO) {
+                return $this->telegramService->sendVideo($user, $file->hash, $text, $buttons);
+            } elseif ($file->type === FileTypes::PHOTO){
+                return $this->telegramService->sendPhoto($user, $file->hash, $text, $buttons);
+            } elseif ($file->type === FileTypes::VOICE){
+                return $this->telegramService->sendVoice($user, $file->hash, $text, $buttons);
             } else {
-                switch($file->type) {
-                    case FileTypes::DOCUMENT:
-                        return $this->maxService->sendFile($user->max_chat, $file->max_hash, $text, 'file');
-                    case FileTypes::VIDEO:
-                        return $this->maxService->sendFile($user->max_chat, $file->max_hash, $text, 'video');
-                    case FileTypes::PHOTO:
-                        return $this->maxService->sendImage($user->max_chat, $file->max_hash, $text);
-                    default:
-                        return $this->maxService->sendMessage($user->max_chat, $text);
-                }
+                return $this->telegramService->sendFile($user, $file->hash, $text, $buttons);
             }
 
         } else {
             $medias = new ArrayOfInputMedia();
             foreach($this->mailing->files as $file){
-                if($user->type === 'telegram') {
-                    if($file->type === FileTypes::VIDEO){
-                        $media = new InputMediaVideo($file->hash);
-                    }elseif($file->type === FileTypes::PHOTO){
-                        $media = new InputMediaPhoto($file->hash);
-                    }else{
-                        $media = new InputMediaDocument($file->hash);
-                    }
-
-                    $medias->addItem($media);
-                } else {
-                    return $this->maxService->sendFile($user->max_chat, $file->max_hash, $text);
+                if($file->type === FileTypes::VIDEO){
+                    $media = new InputMediaVideo($file->hash);
+                }elseif($file->type === FileTypes::PHOTO){
+                    $media = new InputMediaPhoto($file->hash);
+                }else{
+                    $media = new InputMediaDocument($file->hash);
                 }
+
+                $medias->addItem($media);
             }
 
-            if($user->type === 'telegram') {
-                if(mb_strlen($text) > 1024 || $buttons) {
-                    $this->telegramService->sendGallery($user, $medias);
+            if(mb_strlen($text) > 1024 || $buttons) {
+                $this->telegramService->sendGallery($user, $medias);
 
-                    return $this->telegramService->send($user, $text, $buttons);
-                } else {
-                    return $this->telegramService->sendGallery($user, $medias, $text);
+                return $this->telegramService->send($user, $text, $buttons);
+            } else {
+                return $this->telegramService->sendGallery($user, $medias, $text);
+            }
+
+        }
+    }
+
+    protected function sendMaxMessage(User $user)
+    {
+        $text = $this->textsService->normalize($this->mailing->text);
+        $text = str_replace('{balance}', $user->balance, $text);
+        $maxButtons = $this->getMaxButtons();
+
+        $files_count = $this->mailing->files->count();
+
+        if(!$files_count) {
+            return $this->maxService->sendMessage($user->max_chat, $text, $maxButtons);
+        } elseif ($files_count === 1) {
+            $file = $this->mailing->files->first();
+            switch($file->type) {
+                case FileTypes::DOCUMENT:
+                    return $this->maxService->sendFile($user->max_chat, $file->max_hash, $text, 'file');
+                case FileTypes::VIDEO:
+                    return $this->maxService->sendFile($user->max_chat, $file->max_hash, $text, 'video');
+                case FileTypes::PHOTO:
+                    return $this->maxService->sendImage($user->max_chat, $file->max_hash, $text);
+                default:
+                    return $this->maxService->sendMessage($user->max_chat, $text);
+            }
+        } else {
+            foreach($this->mailing->files as $key => $file){
+                $this->maxService->sendFile($user->max_chat, $file->max_hash, "Файл");
+
+                if(array_key_last($this->mailing->files->toArray()) == $key) {
+                    return $this->maxService->sendFile($user->max_chat, $file->max_hash, $text);
                 }
             }
         }
@@ -213,11 +254,38 @@ class SendMailing implements ShouldQueue
 
             }
 
-            try{
-                $this->sendMessage($user);
-                $i++;
-            } catch (\Throwable $exception) {
+            $error = false;
+            if($this->mailing->type == 'all') {
+                try {
+                    $this->sendMessage($user);
+                } catch (\Throwable $exception) {
+                    $error = true;
+                }
+
+                try {
+                    $this->sendMaxMessage($user);
+                } catch (\Throwable $exception) {
+                    $error = true;
+                }
+
+            } else if($this->mailing->type == 'max') {
+                try {
+                    $this->sendMaxMessage($user);
+                } catch (\Throwable $exception) {
+                    $error = true;
+                }
+            } else if($this->mailing->type == 'telegram') {
+                try {
+                    $this->sendMessage($user);
+                } catch (\Throwable $exception) {
+                    $error = true;
+                }
+            }
+
+            if($error) {
                 $e++;
+            } else {
+                $i++;
             }
         }
 

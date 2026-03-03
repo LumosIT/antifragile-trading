@@ -8,7 +8,6 @@ namespace App\Jobs\Telegram;
 use App\Models\Tariff;
 use App\Models\User;
 use App\Services\MaxMailing\MaxBaseService;
-use App\Services\MaxService;
 use App\Services\TelegramMailing\TelegramBaseService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -32,10 +31,12 @@ class SendOffer implements ShouldQueue
 
     public function handle(TelegramBaseService $telegramBaseService, MaxBaseService $maxBaseService)
     {
-        if($this->user->type === 'telegram') {
+        try {
             $telegramBaseService->sendOffer($this->user, $this->tariff);
-        } else {
+        } catch (\Throwable $exception) {}
+        
+        try {
             $maxBaseService->sendOffer($this->user, $this->tariff);
-        }
+        } catch (\Throwable $exception) {}
     }
 }

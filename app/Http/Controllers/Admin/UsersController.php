@@ -16,8 +16,10 @@ use App\Models\User;
 use App\Utilits\Prepare\AdminPrepare;
 use App\Utilits\TableGenerator\Modern\ModernPerfectPaginator;
 use App\Utilits\TableGenerator\PerfectPaginatorResponse;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 
 class UsersController extends Controller
 {
@@ -140,7 +142,11 @@ class UsersController extends Controller
 
     public function inviteSecondStair(Request $request, User $user) : void
     {
-        SendSecondStairInvite::dispatch($user)->onQueue('telegram');
+        if(filled($user->tariff_expired_at)) {
+            SendSecondStairInvite::dispatch($user)->onQueue('telegram');
+        } else {
+            throw new Exception('У пользователя нет активного тарифа');
+        }
     }
 
     public function inviteThirdStair(Request $request, User $user) : void
@@ -172,7 +178,6 @@ class UsersController extends Controller
 
     public function sendOffer(Request $request, User $user) : void
     {
-
         $data = $request->validate([
             'tariff_id' => ['required', 'integer', 'exists:tariffs,id'],
         ]);
@@ -184,7 +189,6 @@ class UsersController extends Controller
         ]);
 
         SendOffer::dispatch($user, $tariff)->onQueue('telegram');
-
     }
 
 }

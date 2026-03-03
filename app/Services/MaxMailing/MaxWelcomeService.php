@@ -1,36 +1,30 @@
 <?php
 
-namespace App\Services\TelegramMailing;
+namespace App\Services\MaxMailing;
 
 use App\Consts\FileTypes;
 use App\Models\Post;
+use App\Models\Tariff;
 use App\Models\User;
 use App\Services\MaxService;
 use App\Services\PostsService;
 use App\Services\TextsService;
-use App\Services\UsersService;
 
 class MaxWelcomeService
 {
 
     protected $maxService;
-    protected $telegramBaseService;
     protected $textsService;
-    protected $usersService;
     protected $postsService;
 
     public function __construct(
         MaxService $maxService,
         TextsService $textsService,
-        TelegramBaseService $telegramBaseService,
-        UsersService  $usersService,
         PostsService $postsService
     )
     {
         $this->maxService = $maxService;
         $this->textsService = $textsService;
-        $this->telegramBaseService = $telegramBaseService;
-        $this->usersService = $usersService;
         $this->postsService = $postsService;
     }
 
@@ -271,6 +265,27 @@ class MaxWelcomeService
         );
     }
 
+    public function sendTariffs(User $user) {
+        $tariffs = Tariff::where('is_active', true)
+            ->where('mode', 'simple')
+            ->get();
+
+        foreach ($tariffs as $tariff) {
+            $keyboard[] = [
+                [
+                    'type' => 'message',
+                    'text' => "Купить {$tariff->name}",
+                ]
+            ];
+        }
+
+        $this->maxService->sendMessage(
+            $user->max_chat,
+            "Выберите тариф:",
+            $keyboard
+        );
+    }
+
     public function sendPreRegistrationAnnouncement(User $user)
     {
         return $this->maxService->sendMessage(
@@ -278,6 +293,15 @@ class MaxWelcomeService
             $this->textsService->get('pre_registration_announcement', [
                 'balance' => $user->balance
             ]),
+            [
+                [
+                    [
+                        'type' => 'link',
+                        'text' => 'Заполнить форму',
+                        'url' => route_public($user, 'public.pre-registration')
+                    ]
+                ]
+            ]
         );
     }
 

@@ -151,11 +151,9 @@ class CloudPaymentsService
      */
     public function cancelSubscription(string $subscription_id) : array
     {
-
         return $this->cloudPayments->request('subscriptions/cancel', [
             'Id' => $subscription_id
         ]);
-
     }
 
     /**

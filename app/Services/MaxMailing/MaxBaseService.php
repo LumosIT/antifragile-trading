@@ -3,11 +3,11 @@
 namespace App\Services\MaxMailing;
 
 use App\Consts\FileTypes;
-use App\Exceptions\Telegram\NotAllowForBannedException;
 use App\Models\Order;
 use App\Models\Post;
 use App\Models\Tariff;
 use App\Models\User;
+use App\Services\CloudPaymentsService;
 use App\Services\MaxService;
 use App\Services\OptionsService;
 use App\Services\OrdersService;
@@ -16,6 +16,8 @@ use App\Services\PostsService;
 use App\Services\TariffsService;
 use App\Services\TextsService;
 use App\Services\StatisticService;
+use App\Services\SubscriptionsService;
+use App\Services\MaxMailing\MaxWelcomeService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -34,6 +36,9 @@ class MaxBaseService
     protected $ordersService;
     protected $statisticService;
     protected $postsService;
+    protected $cloudPaymentsService;
+    protected $subscriptionsService;
+    protected $maxWelcomeService;
 
     public $message;
     public $firstName;
@@ -50,6 +55,9 @@ class MaxBaseService
         $this->ordersService = new OrdersService();
         $this->statisticService = new StatisticService();
         $this->postsService = new PostsService($this->textsService);
+        $this->cloudPaymentsService = new CloudPaymentsService($this->optionsService);
+        $this->subscriptionsService = new SubscriptionsService($this->tariffsService);
+        $this->maxWelcomeService = new MaxWelcomeService($this->maxService, $this->textsService, $this->postsService); 
     }
 
     function parseMaxWebhook(array $data): void
@@ -117,6 +125,64 @@ class MaxBaseService
                 "Вставьте этот код в телеграм-бота https://t.me/club257bot\n\n" .
                 "/synchronization#{$user->max_chat}",
             );
+        } else if($this->message == 'Отменить подписку') {
+            $this->maxService->sendMessage(
+                $user->max_chat,
+                "Вы уверены, что хотите отменить подписку?",
+                [
+                    [
+                        [
+                            'type' => 'message',
+                            'text' => 'Хочу отменить подписку',
+                        ],
+                    ],
+                    [
+                        [
+                            'type' => 'message',
+                            'text' => 'Не отменять подписку',
+                        ]
+                    ]
+                ]
+            );
+        } else if($this->message == 'Хочу отменить подписку') {
+            if(!$user->activeSubscription) {
+                $this->maxService->sendMessage(
+                    $user->max_chat,
+                    "❌ Сейчас это сделать невозможно",
+                );
+                return true;
+            }
+
+            try {
+                $this->cloudPaymentsService->cancelSubscription(
+                    $user->activeSubscription->code
+                );
+
+            } catch (\Throwable $e) {
+                $this->maxService->sendMessage(
+                    $user->max_chat,
+                    "❌ Не удается выключить автопродление",
+                );
+                return true;
+            }
+
+            DB::transaction(function () use ($user){
+                $this->statisticService->onCancelSubscription($user->activeSubscription);
+                $this->subscriptionsService->cancel($user->activeSubscription, false);
+            });
+
+            $user->refresh();
+
+            $this->maxService->sendMessage(
+                $user->max_chat,
+                $this->textsService->get('no_subscribe')
+            );
+        } else if($this->message == 'Продлить подписку') {
+            if($user->meta_is_buy || $this->optionsService->get('following_enabled')) {
+                $this->maxWelcomeService->sendTariffs($user);
+            } else {
+                $this->maxWelcomeService->sendPreRegistrationAnnouncement($user);
+            }
         } else {
             $this->sendStartMessage($user);
         }
@@ -238,6 +304,45 @@ class MaxBaseService
 
     public function validateMaxWebAppData($initData): array
     {
+        $hashCheck = $this->checkHash($initData);
+
+        if (!$hashCheck['valid']) {
+            return ['valid' => false];
+        }
+
+        $dataUser = $hashCheck['dataUser'];
+        $chat = $hashCheck['chat'];
+
+        $user = User::where('type', 'max')
+            ->where('max_user_id', $dataUser['id'])
+            ->first();
+
+        if($user && $user->is_banned) {
+            return ['valid' => false];
+        }
+
+        if ($user) {
+            $user->update([
+                'last_activity_at' => now(),
+                'is_alive' => true,
+            ]);
+        } else {
+            $dataUser['max_user_id'] = $dataUser['id'];
+            $dataUser['max_chat'] = $chat;
+            $user = $this->getOrCreateUser($dataUser);
+        }
+
+        return [
+            'valid' => true,
+            'user' => $user,
+            'link' => route_public($user, 'public.pre-registration'),
+            'test_link' => route_public($user, 'public.testing'),
+            'following_enabled' => $this->optionsService->get('following_enabled'),
+        ];
+    }
+
+    protected function checkHash(string $initData): array
+    {
         $decoded = urldecode($initData);
         parse_str($decoded, $data);
 
@@ -247,68 +352,58 @@ class MaxBaseService
 
         $hash = $data['hash'];
         unset($data['hash']);
+
         ksort($data);
 
-        $chat = null;
         $pairs = [];
         $dataUser = [];
-        $chat = [];
+        $chat = null;
 
         foreach ($data as $key => $value) {
-            if($key === 'auth_date') {
+
+            if ($key === 'auth_date') {
                 $authDate = (int)$value;
-                $currentTime = time();
-                if ($currentTime - $authDate > 86400) {
+                if (time() - $authDate > 86400) {
                     return ['valid' => false];
                 }
             }
 
-            if($key === 'user') {
+            if ($key === 'user') {
                 $dataUser = json_decode($value, true);
             }
 
-            if($key === 'chat') {
-                $chat = json_decode($value, true)['id'];
+            if ($key === 'chat') {
+                $chatDecoded = json_decode($value, true);
+                $chat = $chatDecoded['id'] ?? null;
             }
 
             $pairs[] = $key . '=' . $value;
         }
 
         $dataCheckString = implode("\n", $pairs);
-        $secretKey = hash_hmac('sha256', config('max.token'), 'WebAppData', true);
-        $calculatedHash = hash_hmac('sha256', $dataCheckString, $secretKey);
 
-        if(hash_equals($hash, $calculatedHash)) {
-            // заменить себя на другого юзера для тестов
-            // if($dataUser['id'] == 177027215) {
-            //     $dataUser['id'] = 7461891;
-            // }
+        $secretKey = hash_hmac(
+            'sha256',
+            config('max.token'),
+            'WebAppData',
+            true
+        );
 
-            $user = User::where('type', 'max')
-                ->where('max_user_id', $dataUser['id'])
-                ->first();
+        $calculatedHash = hash_hmac(
+            'sha256',
+            $dataCheckString,
+            $secretKey
+        );
 
-            if($user) {
-                $user->update([
-                    'last_activity_at' => now(),
-                    'is_alive' => true,
-                ]);
-            } else {
-                $dataUser['max_user_id'] = $dataUser['id'];
-                $dataUser['max_chat'] = $chat;
-                $user = $this->getOrCreateUser($dataUser);
-            }
-
-            return [
-                'valid' => true,
-                'user' => $user,
-                'link' => route_public($user, 'public.pre-registration'),
-                'test_link' => route_public($user, 'public.testing'),
-                'following_enabled' => $this->optionsService->get('following_enabled'),      
-            ];
+        if (!hash_equals($hash, $calculatedHash)) {
+            return ['valid' => false];
         }
 
-        return ['valid' => false];
+        return [
+            'valid' => true,
+            'dataUser' => $dataUser,
+            'chat' => $chat,
+        ];
     }
 
     public function sendPaymentForm(User $user, Order $order)
@@ -409,6 +504,14 @@ class MaxBaseService
         return $this->maxService->sendMessage(
             $user->max_chat,
             $this->textsService->get('payment_reminder'),
+            [
+                [
+                    [
+                        'type' => 'message',
+                        'text' => 'Отменить подписку'
+                    ]
+                ]
+            ]
         );
     }
 
@@ -417,6 +520,14 @@ class MaxBaseService
         return $this->maxService->sendMessage(
             $user->max_chat,
             $this->textsService->get('cancel_reminder'),
+            [
+                [
+                    [
+                        'type' => 'message',
+                        'text' => 'Продлить подписку',
+                    ]
+                ]
+            ]
         );
     }
 

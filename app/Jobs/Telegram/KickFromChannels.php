@@ -28,13 +28,15 @@ class KickFromChannels implements ShouldQueue
 
     public function handle(TelegramBaseService $telegramBaseService, MaxBaseService $maxBaseService)
     {
-        if($this->user->type == 'telegram') {
+        try {
             $telegramBaseService->kickFromAllChannels($this->user);
             $telegramBaseService->sendKickMessage($this->user);
-        } else {
+        } catch (\Throwable $exception) {}
+
+        try {
             $maxBaseService->kickUserFromChannel($this->user, '-70931186387659');
             $maxBaseService->kickUserFromChannel($this->user, '-71321808014027');
             $maxBaseService->sendKickMessage($this->user);
-        }
+        } catch (\Throwable $exception) {}
     }
 }

@@ -16,7 +16,6 @@ use App\Utilits\TableGenerator\PerfectPaginatorResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class MailingController extends Controller
 {
@@ -119,7 +118,6 @@ class MailingController extends Controller
                 ->delay(now()->addMinute());
 
             return $mailing;
-
         });
 
         return AdminPrepare::mailing($mailing);

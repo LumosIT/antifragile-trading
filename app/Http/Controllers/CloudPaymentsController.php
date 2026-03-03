@@ -120,9 +120,6 @@ class CloudPaymentsController extends Controller
 
     }
 
-    /**
-     * Новый платеж
-     */
     protected function onNewPayment(
         User $user,
         Order $order,
@@ -179,11 +176,9 @@ class CloudPaymentsController extends Controller
             if($user->balance >= 4900 && $this->tariffsService->getDurationSeconds($tariff) >= 60 * 60 * 24 * 179){
 
                 $this->usersService->spendBalance($user, 4900);
-
                 $next_payment_date->addMonth();
             }
         }
-
 
         /**
          * Отменить прошлую подписку на CloudPayments
@@ -287,9 +282,6 @@ class CloudPaymentsController extends Controller
 
             SendSecondStairInvite::dispatch($user, $order)->onQueue('telegram');
 
-            /**
-             * Сохраняем токен
-             */
             CloudPaymentToken::create([
                 'user_id' => $user->id,
                 'hash' => $token
@@ -329,8 +321,13 @@ class CloudPaymentsController extends Controller
         $card   = (string)$json->get('CardLastFour');
         $amount = (int)$json->get('Amount');
 
-        $data = (string)$json->get('Data');
-        $data = json_decode($data, true);
+        try {
+            $data = (string)$json->get('Data');
+            $data = json_decode($data, true);
+        } catch (\Throwable $e){
+            $data = $json->get('Data');
+        }
+
 
         $user = User::find($account_id);
 
@@ -350,9 +347,9 @@ class CloudPaymentsController extends Controller
             'offer_ready' => false
         ]);
         
-        if(Payment::query()->where('hash', $transaction_id)->exists()){
-            return ['code' => 0];
-        }
+        // if(Payment::query()->where('hash', $transaction_id)->exists()){
+        //     return ['code' => 0];
+        // }
 
         if ($status === 'Completed') {
 
