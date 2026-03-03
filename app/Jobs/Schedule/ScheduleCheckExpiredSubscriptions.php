@@ -3,16 +3,20 @@
 namespace App\Jobs\Schedule;
 
 use App\Consts\SubscriptionStatuses;
+use App\Consts\TariffModes;
+use App\Consts\UserStages;
 use App\Jobs\Telegram\KickFromChannels;
 use App\Jobs\Telegram\SendSubscribeCancelation;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Services\CloudPaymentsService;
 use App\Services\SubscriptionsService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class ScheduleCheckExpiredSubscriptions implements ShouldQueue
 {
@@ -34,7 +38,7 @@ class ScheduleCheckExpiredSubscriptions implements ShouldQueue
      * Останавливает истекшие подписки
      * Удаляет из канала пользователей с истекшим сроком тарифа
      */
-    public function handle(SubscriptionsService $subscriptionsService)
+    public function handle(SubscriptionsService $subscriptionsService, CloudPaymentsService $cloudPaymentsService)
     {
 
         /**
@@ -47,6 +51,10 @@ class ScheduleCheckExpiredSubscriptions implements ShouldQueue
 
         foreach($subscriptions as $subscription){
             $subscriptionsService->stop($subscription, false);
+
+            try{
+                $cloudPaymentsService->cancelSubscription($subscriptions->code);
+            }catch (\Throwable $e){}
         }
 
         /**
@@ -55,11 +63,10 @@ class ScheduleCheckExpiredSubscriptions implements ShouldQueue
         $users = User::query()
             ->whereNotNull('tariff_id')
             ->where(function($query){
-                $query->orWhere(function($subQuery){
-                    $subQuery->where('tariff_expired_at', '<', now());
-                    $subQuery->whereDoesntHave('activeSubscription');
-                });
+                $query->where('tariff_expired_at', '<', now());
+                $query->whereDoesntHave('activeSubscription');
             })
+            ->with('tariff')
             ->lazyById(10);
 
         foreach($users as $user){

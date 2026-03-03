@@ -129,16 +129,16 @@ class SubscriptionsService
 
             $user = $subscription->user;
 
-            if($reset_tariff){
+            $user->stage = $subscription->tariff->mode === TariffModes::FULL
+                ? UserStages::CANCEL_THIRD_PART
+                : UserStages::CANCEL_SECOND_PART;
 
-                $user->stage = $subscription->tariff->mode === TariffModes::FULL
-                    ? UserStages::CANCEL_THIRD_PART
-                    : UserStages::CANCEL_SECOND_PART;
+            if($reset_tariff){
                 $user->tariff_expired_at = null;
                 $user->tariff_id = null;
-                $user->save();
-
             }
+
+            $user->save();
 
             $subscription->status = SubscriptionStatuses::CANCELLED;
             $subscription->save();
