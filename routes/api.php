@@ -84,6 +84,7 @@ Route::as('.')->group(function(){
         Route::prefix('/users')->as('users.')->middleware('permissions:' . Permissions::USERS)->group(function(){
 
             Route::post('/list', [UsersController::class, 'list'])->name('list');
+            Route::post('/toggle-stage', [UsersController::class, 'toggleStage'])->name('toggleStage');
 
             Route::post('/edit/{user}', [UsersController::class, 'edit'])->name('edit');
             Route::post('/set-banned/{user}', [UsersController::class, 'setBanned'])->name('set-banned');
@@ -162,7 +163,7 @@ Route::as('.')->group(function(){
         Route::prefix('/options')->as('options.')->middleware('permissions:' . Permissions::OPTIONS)->group(function(){
 
             Route::post('/edit/{option}', [OptionsController::class, 'edit'])->name('edit');
-
+            Route::get('/start-mailing', [OptionsController::class, 'startMailing'])->name('start-mailing');
         });
 
         /**

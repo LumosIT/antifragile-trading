@@ -53,6 +53,8 @@ class AdminPrepare
             'name',
             'username',
             'chat',
+            'max_chat',
+            'stage',
             'picture',
             'stage',
             'balance',
@@ -152,7 +154,8 @@ class AdminPrepare
             'errors_count',
             'stages',
             'tariffs',
-            'type'
+            'type',
+            'created_at'
         ]);
     }
 

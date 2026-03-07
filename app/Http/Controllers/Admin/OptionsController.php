@@ -24,21 +24,6 @@ class OptionsController extends Controller
 
     public function edit(Request $request, Option $option) : void
     {
-        if($option->id == 'following_enabled') {
-            if(filled($request->input('value'))) {
-                $textsService = app(TextsService::class);
-                $mailing = Mailing::create([
-                    'text' => $textsService->get('announcement'),
-                    'stages' => ["0","4","5","6","100"],
-                    'tariffs' => ["0"],
-                    'type' => 'all',
-                    'buttons' => ["buy2"],
-                ]);
-
-                SendMailing::dispatch($mailing)->onQueue('telegram');
-            }
-        }
-
         $data = $request->validate([
             'value' => ['nullable', 'string', 'max:4096'],
         ]);
@@ -47,6 +32,23 @@ class OptionsController extends Controller
             $option->id,
             Arr::get($data, 'value') ?: ''
         );
+    }
+
+    public function startMailing() {
+        $textsService = app(TextsService::class);
+        $mailing = Mailing::create([
+            'text' => $textsService->get('announcement'),
+            'stages' => ["0","4","5","6","100"],
+            'tariffs' => ["0"],
+            'type' => 'all',
+            'buttons' => ["buy2"],
+        ]);
+
+        SendMailing::dispatch($mailing)->onQueue('telegram');
+
+        return response()->json([
+            'message' => 'Рассылка успешно запущена'
+        ]);
     }
 
 }

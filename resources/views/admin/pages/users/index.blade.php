@@ -112,7 +112,30 @@
                     sortable : true,
                     width: 100,
                     data(row) {
-                        return row.type;
+                        let html = '';
+
+                        if (/^\d+$/.test(row.chat)) {
+                            html += '<div>Telegram</div>';
+                        }
+
+                        if(row.max_chat) {
+                            html += '<div>MAX</div>'
+                        }
+
+                        return html;
+                    }
+                },
+                {
+                    name: 'Админ',
+                    code: 'stage',
+                    sortable : true,
+                    width: 100,
+                    data(row) {
+                        if(row.stage == 100) {
+                            return '<u style="cursor: pointer" class="btn btn-success btn-sm toggle-admin-stage" data-target="remove" data-id="'+row.id+'">Админ</u>';
+                        } else {
+                            return '<u style="cursor: pointer" class="btn btn-light btn-sm toggle-admin-stage" data-target="get" data-id="'+row.id+'">Пользователь</u>';
+                        }
                     }
                 },
                 {
@@ -268,5 +291,66 @@
         initDatatableFilter(dataTable, 'type', $("#filter_type"));
 
         initDatatableRemoveButton(dataTable, '.js-remove-datatable-button', 'Удалить пользователя?');
+
+        // переключение админ статуса
+        $(document).on('click', '.toggle-admin-stage', function (e) {
+            e.preventDefault();
+
+            let el = $(this);
+
+            // защита от двойного клика
+            if (el.data('loading')) {
+                return;
+            }
+
+            let id = el.data('id');
+            let target = el.data('target');
+
+            // защита от дурака
+            if (!id || !target) {
+                console.error('Некорректные данные для смены статуса');
+                return;
+            }
+
+            if (!['get', 'remove'].includes(target)) {
+                console.error('Некорректное действие');
+                return;
+            }
+
+            let confirmText = target === 'get'
+                ? 'Сделать пользователя администратором?'
+                : 'Убрать пользователя из администраторов?';
+
+            if (!confirm(confirmText)) {
+                return;
+            }
+
+            el.data('loading', true);
+
+            $.ajax({
+                url: "{{ route('admin.api.users.toggleStage') }}",
+                method: "POST",
+                data: {
+                    id: id,
+                    target: target,
+                    _token: "{{ csrf_token() }}"
+                },
+                success(response) {
+
+                    // перерисовываем таблицу
+                    dataTable.reload();
+
+                },
+                error(xhr) {
+
+                    alert('Ошибка при изменении статуса');
+
+                },
+                complete() {
+                    el.data('loading', false);
+                }
+            });
+
+        });
     </script>
 @endpush

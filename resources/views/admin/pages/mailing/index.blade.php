@@ -158,7 +158,7 @@
                     name : 'Дата',
                     code : 'created_at',
                     sortable: true,
-                    data(row){
+                    data(row) {
                         return htmlTemplateDate(row.created_at);
                     }
                 },

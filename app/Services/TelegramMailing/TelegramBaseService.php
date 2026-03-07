@@ -475,7 +475,6 @@ class TelegramBaseService
 
     public function sendInviteToSecondStair(User $user, ?Order $order = null) : Message
     {
-
         $channel = -$this->optionsService->get('channel_second_stair_id');
         $chat = -$this->optionsService->get('chat_second_stair_id');
 
@@ -485,27 +484,33 @@ class TelegramBaseService
         if(!$this->telegramService->checkIsChannelMember($channel, $user)){
             try {
                 $this->telegramService->bot->unbanChatMember($channel, $user->chat);
-            }catch (\Throwable $e){}
+            }catch (\Throwable $e) {}
         }
 
         if(!$this->telegramService->checkIsChannelMember($chat, $user)) {
             try {
                 $this->telegramService->bot->unbanChatMember($chat, $user->chat);
-            } catch (\Throwable $e) {
-            }
+            } catch (\Throwable $e) {}
         }
 
         $url = $this->telegramService->createChannelLink($channel);
+        $token = $user->createOrGetSynchronizationToken();
+
+        if(is_null($user->max_chat)) {
+            $maxLink = "https://max.ru/id745115760361_bot?start=synchronization-$token";
+        } else {
+            $maxLink = $this->optionsService->get('max_invite_link');
+        }
 
         return $this->sendMenu(
             $user,
             $this->textsService->get('invite_to_second_stair', [
-                'link' => $url,
+                'telegram_link' => $url,
+                'max_link' => $maxLink,
                 'expired' => $user->tariff_expired_at->format('d.m.Y H:i'),
                 'order_id' => $order ? $order->code : $this->ordersService->generateUniqueCode()
             ])
         );
-
     }
 
     public function sendInviteToThirdStair(User $user, ?Order $order = null) : Message

@@ -234,8 +234,6 @@ class PublicController extends Controller
 
     public function showTest(Request $request, User $user)
     {
-        $service = app(MaxBaseService::class);
-        $service->sendBillToThirdStep($this->user());
         if($this->user()->is_test_completed) {
             return view('public.third-step-testing', [
                 'completed' => true

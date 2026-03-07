@@ -35,13 +35,11 @@ class SendSecondStairInvite implements ShouldQueue
         try {
             $telegramBaseService->sendInviteToSecondStair($this->user, $this->order);
         } catch (\Throwable $e) {
-            Log::error("Ошибка при отправке приглашения на 2 ступень пользователю {$this->user->id} в Telegram: {$e->getMessage()}");
         }
 
         try {
             $maxBaseService->sendInviteTochannel($this->user, $this->order);
         } catch (\Throwable $e) {
-            Log::error("Ошибка при отправке приглашения на 2 ступень пользователю {$this->user->id} в Max: {$e->getMessage()}");
         }
     }
 }

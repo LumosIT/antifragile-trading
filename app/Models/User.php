@@ -57,7 +57,8 @@ class User extends Authenticatable
         'max_user_id',
         'offer_ready',
         'invite_in_test',
-        'max_chat'
+        'max_chat',
+        'synchronization_token'
     ];
 
     protected $attributes = [
@@ -149,6 +150,15 @@ class User extends Authenticatable
     public function applications(): HasMany
     {
         return $this->hasMany(Application::class);
+    }
+
+    public function createOrGetSynchronizationToken() {
+        if(is_null($this->synchronization_token)) {
+            $this->synchronization_token = md5($this->id);
+            $this->save();
+        }
+
+        return $this->synchronization_token;
     }
 
     /**

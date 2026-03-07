@@ -63,12 +63,10 @@ class UsersService
     public function synchronizationWithMax(User $user, int $id): bool
     {
         if(filled($user->max_chat)) {
-            Log::info(1);
             return false;
         }
 
         if($user->type == 'max') {
-            Log::info(2);
             return false;
          }
 
@@ -77,7 +75,6 @@ class UsersService
             ->first();
 
         if(!$anotherUser) {
-            Log::info(3);
             return false;
         }
 

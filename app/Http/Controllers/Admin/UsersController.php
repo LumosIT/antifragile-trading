@@ -59,7 +59,7 @@ class UsersController extends Controller
 
         $paginator = new ModernPerfectPaginator($users);
         $paginator->enabledDateFilter();
-        $paginator->setAllowedSearchColumns(['username', 'type', 'chat', 'email', 'fio', 'phone', 'name']);
+        $paginator->setAllowedSearchColumns(['id', 'username', 'type', 'chat', 'email', 'fio', 'phone', 'name']);
         $paginator->setSearchPreparator(function(string $search) {
             return ltrim($search, '@');
         });
@@ -69,6 +69,8 @@ class UsersController extends Controller
             'name',
             'username',
             'chat',
+            'max_chat',
+            'stage',
             'email',
             'fio',
             'phone',
@@ -191,4 +193,40 @@ class UsersController extends Controller
         SendOffer::dispatch($user, $tariff)->onQueue('telegram');
     }
 
+    public function toggleStage(Request $request)
+    {
+        $id = $request->input('id');
+        $target = $request->input('target');
+
+        // проверка входных данных
+        if (!$id || !in_array($target, ['get', 'remove'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Некорректные данные'
+            ], 422);
+        }
+
+        $user = \App\Models\User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Пользователь не найден'
+            ], 404);
+        }
+
+        // установка stage
+        if ($target === 'get') {
+            $user->stage = 100; // админ
+        } else {
+            $user->stage = 0; // обычный
+        }
+
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'stage' => $user->stage
+        ]);
+    }
 }

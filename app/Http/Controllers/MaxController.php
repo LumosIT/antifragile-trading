@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Consts\SubscriptionStatuses;
-use App\Models\Option;
 use App\Models\Order;
 use App\Models\Tariff;
 use App\Models\User;
@@ -13,10 +12,12 @@ use App\Services\MaxService;
 use App\Services\MaxMailing\MaxBaseService;
 use App\Services\OptionsService;
 use App\Services\OrdersService;
+use App\Services\StatisticService;
 use App\Services\SubscriptionsService;
 use App\Services\TelegramMailing\TelegramUpgradeService;
 use App\Services\TextsService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -69,15 +70,12 @@ class MaxController extends Controller
 
         return response()->json($maxService->validateMaxWebAppData($request->input('initData')));
     }
-
     public function setStep(Request $request): JsonResponse
     {
         $chat = $request->input('chat');
         $step = $request->input('step');
 
-        $user = User::where('type', 'max')
-            ->where('max_chat', $chat)
-            ->first();
+        $user = User::where('max_chat', $chat)->first();
 
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'User not found']);
@@ -92,8 +90,7 @@ class MaxController extends Controller
     }
 
     public function getProfile(Request $request) {
-        $user = User::where('type', 'max')
-            ->with(['tariff'])
+        $user = User::with(['tariff'])
             ->where('max_chat', $request->chat)
             ->first();
 
@@ -133,9 +130,7 @@ class MaxController extends Controller
     }
 
     public function renewTariff(Request $request) {
-        $user = User::where('type', 'max')
-            ->where('max_chat', $request->chat)
-            ->first();
+        $user = User::where('max_chat', $request->chat)->first();
 
         $optionsService = app(OptionsService::class);
 
@@ -173,7 +168,7 @@ class MaxController extends Controller
     }
 
     public function enableAutoPayment(Request $request) {
-        $user = User::where('max_chat', $request->max_chat)->first();
+        $user = User::where('max_chat', $request->chat)->first();
 
         if(!$user) {
             return response()->json([
@@ -231,10 +226,10 @@ class MaxController extends Controller
         ]);
     }
 
-    public function disablaAutoPayment(Request $request) {
-        $user = User::where('max_chat', $request->max_chat)->first();
+    public function disableAutoPayment(Request $request) {
+        $user = User::where('max_chat', $request->chat)->first();
 
-        if(!$user) {
+        if(!$user || $user && !$user->activeSubscription) {
             return response()->json([
                 'status' => false,
                 'message' => '❌ Сейчас это невозможно'
@@ -243,46 +238,28 @@ class MaxController extends Controller
 
         $cloudPaymentsService = app(CloudPaymentsService::class);
         $subscriptionsService = app(SubscriptionsService::class);
-
-        $subscription = $user->subscriptions()
-            ->orderBy('id', 'desc')
-            ->first();
-
-        $token = $user->cloudPaymentTokens()
-            ->orderBy('id', 'desc')
-            ->first();
-
-        if (
-            !$token || !$subscription ||
-            $user->tariff_id !== $subscription->tariff_id ||
-            $user->activeSubscription ||
-            $user->tariff_expired_at <= now() ||
-            $subscription->status !== SubscriptionStatuses::CANCELLED
-        ) {
-            return response()->json([
-                'status' => false,
-                'message' => '❌ Сейчас это невозможно'
-            ]);
-        }
+        $statisticService = app(StatisticService::class);
 
         try {
-            $cloudData = $cloudPaymentsService->createSubscription(
-                $user,
-                $token->hash,
-                $subscription->amount,
-                $subscription->duration,
-                $cloudPaymentsService->subscriptionPeriodToCloudPeriod($subscription->period),
-                $user->tariff_expired_at
+            $cloudPaymentsService->cancelSubscription(
+                $user->activeSubscription->code
             );
-
-        } catch (\Throwable $e) {
+        } catch (\Throwable $e){
             return response()->json([
                 'status' => false,
-                'message' => '❌ Не удалось включить автопродление'
+                'message' => '❌ Не удалось выключить автопродление, попробуйте ещё раз'
             ]);
         }
 
-        $subscriptionsService->renew($subscription, $cloudData['Model']['Id'], $user->tariff_expired_at);
+        DB::transaction(function () use ($user, $statisticService, $subscriptionsService){
+            $statisticService->onCancelSubscription($user->activeSubscription);
+            $subscriptionsService->cancel($user->activeSubscription, false);
+        });
+
+        return response()->json([
+            'status' => true,
+            'message' => '✅ Автопродление: выключено'
+        ]);
     }
 
     public function completeTest(Request $request, TelegramUpgradeService $service)

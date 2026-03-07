@@ -45,7 +45,7 @@
 
             <test-form
                 :user="user"
-                :test-link="testLink">
+                :link="testLink">
             </test-form>
 
             <support></support>

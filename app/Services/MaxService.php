@@ -72,12 +72,13 @@ class MaxService
 
     function sendMessage(string $chat, string $text, array $keyboard = [], $parseMode = 'html'): array
     {
+        Log::info($text);
         $url = "https://platform-api.max.ru/messages?chat_id=" . $chat;
 
         $data = [
             "text" => $text,
             "format" => $parseMode,
-            "disable_link_preview" => false
+            "disable_link_preview" => true
         ];
 
         if (!empty($keyboard)) {

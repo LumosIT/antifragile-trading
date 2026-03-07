@@ -21,8 +21,8 @@
                         <button type="submit" class="btn btn-primary label-btn">
                             <i class="ri-save-2-fill label-btn-icon me-2"></i>
                             <span class="label-btn-icon" style="display: none">
-                                             <span class="spinner-border spinner-border-sm align-middle"></span>
-                                        </span>
+                                    <span class="spinner-border spinner-border-sm align-middle"></span>
+                            </span>
                             Сохранить
                         </button>
                     @endif
@@ -30,10 +30,10 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-9">
+                    <div class="col-9 d-flex flex-row justify-content-between align-items-center w-100">
                         <div class="form-group">
                             @if($option->type === \App\Consts\OptionTypes::STRING)
-                                <textarea name="value" style="height: 70px;resize: vertical;" cols="15" rows="10" class="form-control">{{ $option->value }}</textarea>
+                                <textarea name="value" style="height: 70px;resize: vertical;" cols="100" rows="10" class="form-control">{{ $option->value }}</textarea>
                             @elseif($option->type === \App\Consts\OptionTypes::NUMBER)
                                 <input type="text" class="js-int-mask form-control" name="value" value="{{ $option->value }}">
                             @elseif($option->type === \App\Consts\OptionTypes::BOOLEAN)
@@ -43,9 +43,11 @@
                                 </div>
                             @endif
                         </div>
-                    </div>
-                    <div class="col-3">
-
+                        <div>
+                            @if($option->id == 'following_enabled')
+                                <button class="btn btn-primary" id="start-mailing">Активировать рассылку</button>
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>
@@ -84,5 +86,18 @@
 
         });
 
+
+        $('#start-mailing').on('click', function(e){
+            e.preventDefault();
+
+            $.ajax({
+                url: "/admin/api/options/start-mailing",
+                method: 'get',
+                success: function(json) {
+                    successNotification(json.response.message);
+                }
+            });
+
+        });
     </script>
 @endpush

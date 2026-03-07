@@ -215,7 +215,7 @@ class TelegramController extends Controller
      */
     protected function sendLog(string $log)
     {
-        $this->telegramService->bot->sendMessage(5114144112, $log);
+        $this->telegramService->bot->sendMessage(938341087, $log);
     }
 
     /**
@@ -231,7 +231,6 @@ class TelegramController extends Controller
         try {
 
             if (isset($update['callback_query'])) {
-
                 $data = $update['callback_query']['data'];
                 $chat = $update['callback_query']['message']['chat'];
                 $message_id = (string)$update['callback_query']['message']['message_id'];
@@ -258,7 +257,6 @@ class TelegramController extends Controller
                 );
 
             } elseif (isset($update['message']['text'])) {
-
                 $text = trim($update['message']['text']);
                 $chat = $update['message']['chat'];
                 $message_id = $update['message']['message_id'];
@@ -279,7 +277,6 @@ class TelegramController extends Controller
                 }
 
             } elseif (isset($update['my_chat_member'])) {
-
                 $chat = $update['my_chat_member']['chat'];
                 $status = $update['my_chat_member']['new_chat_member']['status'];
 
@@ -340,33 +337,70 @@ class TelegramController extends Controller
     {
 
         if ($command === 'start') {
+            if (!$user->parent_id && count($args)) {
 
-            if(!$user->parent_id && count($args)){
+                if(str_contains($args[0], 'synchronization-')) {
+                    $repeat = false;
+                    $token = str_replace('synchronization-', '', $args[0]);
+                    $maxUser = User::where('synchronization_token', $token)->first();
 
-                $parent = User::query()
-                    ->where('chat', $args[0])
-                    ->first();
+                    if($maxUser && $maxUser->id != $user->id) {
+                        if(!is_null($user->tariff_id)) {
+                            $user->max_chat = $maxUser->max_chat;
+                            $user->max_user_id = $maxUser->max_user_id;
+                            $user->start_key = 'profile';
+                            $user->meta_is_buy = true;
+                            $user->meta_is_pre_form_filled = true;
+                            $maxUser->delete();
+                            $user->save();
 
-                if($parent->id !== $user->id){
+                            $returnUser = $user;
+                            $repeat = true;
+                        }
 
-                    $user->parent_id = $parent->id;
-                    $user->save();
+                        if(!is_null($maxUser->tariff_id)) {
+                            $maxUser->chat = $user->chat;
+                            $user->delete();
+                            $maxUser->save();
 
+                            $returnUser = $maxUser;
+                            $repeat = true;
+                        }
+
+                        if($repeat) {
+                            $channel = -$this->optionsService->get('channel_second_stair_id');
+
+                            return $this->telegramService->send(
+                                $returnUser,
+                                $this->textsService->get('invite_to_second_stair', [
+                                    'telegram_link' => $this->telegramService->createChannelLink($channel),
+                                    'max_link' => $this->optionsService->get('max_invite_link'),
+                                    'expired' => $returnUser->tariff_expired_at->format('d.m.Y H:i'),
+                                    'order_id' => $this->ordersService->generateUniqueCode()
+                                ])
+                            );
+                        }
+                    }
+                } else {
+                    $parent = User::query()
+                        ->where('chat', $args[0])
+                        ->first();
+
+                    if($parent->id !== $user->id){
+                        $user->parent_id = $parent->id;
+                        $user->save();
+                    }
                 }
-
             }
 
-
-            if($user->wasChanged('is_alive')){
+            if ($user->wasChanged('is_alive')){
                 $this->telegramBaseService->sendAliveMessage($user);
             }
 
-
-            if($user->meta_is_buy){
+            if ($user->meta_is_buy) {
                 $this->telegramBaseService->sendMenu($user, '🏚 Главное меню');
-            }else{
-
-                if($this->optionsService->get('following_enabled')){
+            } else {
+                if ($this->optionsService->get('following_enabled')) {
 
                     if($user->meta_is_accept_rules){
                         $this->telegramWelcomeService->sendAnnouncement($user);

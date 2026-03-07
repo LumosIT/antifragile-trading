@@ -5,7 +5,7 @@
         <meta charset="UTF-8">
         <meta name='viewport' content='width=device-width, initial-scale=1.0'>
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>@yield('title') | Petr Kraev Admin</title>
+        <title>CLUB 257</title>
 
         <!-- Favicon -->
         <link rel="icon" href="/favicon.ico" />

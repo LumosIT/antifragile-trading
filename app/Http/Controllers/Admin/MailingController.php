@@ -51,7 +51,8 @@ class MailingController extends Controller
             'status',
             'users_count',
             'messages_count',
-            'type'
+            'type',
+            'created_at'
         ]);
 
         return $paginator->build($request)->map(function ($mailing) {

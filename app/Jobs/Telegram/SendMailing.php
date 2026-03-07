@@ -61,7 +61,6 @@ class SendMailing implements ShouldQueue
     {
         $query = User::query()
             ->alive()
-            ->where('id', 2474)
             ->whereIn('stage', $this->mailing->stages)
             ->where(function($query) {
 
@@ -76,7 +75,7 @@ class SendMailing implements ShouldQueue
             })
             ->orderByDesc('id');
 
-        if($this->mailing->last_user_id){
+        if($this->mailing->last_user_id) {
             $query->where('id', '<', $this->mailing->last_user_id);
         }
 
@@ -89,7 +88,6 @@ class SendMailing implements ShouldQueue
         }  
 
         return $query;
-
     }
 
     protected function getMaxButtons(): array
@@ -100,7 +98,6 @@ class SendMailing implements ShouldQueue
             $tariffs = Tariff::where('is_active', true)
                 ->where('mode', 'simple')
                 ->get();
-
 
             foreach ($tariffs as $tariff) {
                 $keyboard[] = [
@@ -237,7 +234,7 @@ class SendMailing implements ShouldQueue
         $e = $this->mailing->errors_count;
 
         foreach($users as $user) {
-            if(!(++$c % $this->getDelayInterval())){
+            if(!(++$c % $this->getDelayInterval())) {
 
                 $this->mailing->messages_count = $i;
                 $this->mailing->errors_count = $e;
@@ -251,38 +248,23 @@ class SendMailing implements ShouldQueue
                 }
 
                 time_nanosleep($this->getDelayDuration(), 0);
-
             }
 
-            $error = false;
-            if($this->mailing->type == 'all') {
-                try {
-                    $this->sendMessage($user);
-                } catch (\Throwable $exception) {
-                    $error = true;
-                }
-
-                try {
-                    $this->sendMaxMessage($user);
-                } catch (\Throwable $exception) {
-                    $error = true;
-                }
-
-            } else if($this->mailing->type == 'max') {
-                try {
-                    $this->sendMaxMessage($user);
-                } catch (\Throwable $exception) {
-                    $error = true;
-                }
-            } else if($this->mailing->type == 'telegram') {
-                try {
-                    $this->sendMessage($user);
-                } catch (\Throwable $exception) {
-                    $error = true;
-                }
+            $error1 = false;
+            $error2 = false;
+            try {
+                $this->sendMessage($user);
+            } catch (\Throwable $exception) {
+                $error1 = true;
             }
 
-            if($error) {
+            try {
+                $this->sendMaxMessage($user);
+            } catch (\Throwable $exception) {
+                $error2 = true;
+            }
+
+            if($error1 && $error2) {
                 $e++;
             } else {
                 $i++;

@@ -36,7 +36,7 @@
             </div>
         @endforeach
 
-        <button type="submit" class="btn btn-primary btn-lg w-100 mb-5">Отправить ответы</button>
+        <button type="submit" class="btn btn-dark btn-lg w-100 mb-5">Отправить ответы</button>
     </form>
     @endisset
 

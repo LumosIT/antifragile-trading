@@ -46,7 +46,7 @@ function initVueApp(startStep = 1, user, data) {
                 isReady: false,
                 user: user,
                 formLink: data.link,
-                testLink: data.testLink,
+                testLink: data.test_link,
                 following_enabled: data.following_enabled,
                 step: startStep,
                 totalSteps: 20,
@@ -69,9 +69,6 @@ function initVueApp(startStep = 1, user, data) {
                 mediaLoaded: false,
                 showLightbox: false,
             }
-        },
-        mounted() {
-            console.log(this.following_enabled);
         },
         watch: {
             step(newStep) {
@@ -280,8 +277,8 @@ function initVueApp(startStep = 1, user, data) {
         },
         methods: {
             async loadProfile() {
-                try {
                     const res = await fetch(`/max/get-profile?chat=${this.max_chat}`);
+                    console.log(res);
                     const data = await res.json();
 
                     this.profileHtml = data.profile + "<p>Баланс: " + data.balance + "</p><hr>" + data.tariff;
@@ -293,11 +290,7 @@ function initVueApp(startStep = 1, user, data) {
 
                     this.activeSubscription = data.activeSubscription;
 
-                } catch (e) {
-                    this.error = true;
-                } finally {
                     this.loading = false;
-                }
             },
 
             async copyLink() {
@@ -306,7 +299,7 @@ function initVueApp(startStep = 1, user, data) {
                     this.copied = true;
                     setTimeout(() => this.copied = false, 2000);
                 } catch (e) {
-                    alert('Не удалось скопировать');
+                    this.$root.showNotification('Не удалось скопировать', 'error');
                 }
             },
 
@@ -331,8 +324,7 @@ function initVueApp(startStep = 1, user, data) {
                     }
 
                 } catch (e) {
-                    console.error('Ошибка:', e);
-                    alert('Ошибка продления');
+                    this.$root.showNotification('Ошибка продления', 'error');
                 }
             },
 
@@ -398,8 +390,7 @@ function initVueApp(startStep = 1, user, data) {
             <div class="card shadow-lg p-4 need-colored">
 
                 <div v-if="loading">Загрузка профиля...</div>
-                <div v-else-if="error">Ошибка загрузки профиля</div>
-
+                <div v-else-if="error">Синхронизация прошла успешно, обновите страницу и увидите данные вашего профиля</div>
                 <div v-else>
 
                     <button class="btn btn-dark mt-2 mb-2 w-100" @click="copyLink">
@@ -472,7 +463,7 @@ function initVueApp(startStep = 1, user, data) {
                                 Отмена
                             </button>
                             <button 
-                                class="btn btn-light"
+                                class="btn btn-primary"
                                 @click="goToForm">
                                 Заполнить форму
                             </button>
@@ -551,7 +542,7 @@ function initVueApp(startStep = 1, user, data) {
                     <template v-else>
                         <h1 class="text-center">Форма не заполнена</h1>
                         <p>Пожалуйста, заполните форму, чтобы мы могли связаться с вами.</p>
-                        <a class="btn btn-outline-dark" :href="formLink" target="_blank">Заполнить форму</a>
+                        <a class="btn btn-primary" :href="formLink" target="_blank">Заполнить форму</a>
                     </template>
                 </div>
 
@@ -616,8 +607,6 @@ function initVueApp(startStep = 1, user, data) {
 
                     this.showTariffModal = true;
                     this.tariffs = data.tariffs;
-
-                    console.log(data);
                 } catch (e) {
                     this.$root.showNotification('Ошибка при обновлении.', 'error');
                 }
@@ -704,7 +693,7 @@ function initVueApp(startStep = 1, user, data) {
     });
 
     app.component('test-form', {
-        props: ['user', 'testLink'],
+        props: ['user', 'link'],
         template: `
             <div class="card need-colored shadow-lg p-4 w-100 d-flex flex-column" v-if="user && user.invite_in_test">
                 <div class="text-center">
@@ -723,7 +712,7 @@ function initVueApp(startStep = 1, user, data) {
                         Обратите внимание: тест отличается высокой сложностью.
                     </p>
 
-                    <a :href="testLink" class="btn btn-success mt-3" target="_blank">
+                    <a :href="link" class="btn btn-success mt-3" target="_blank">
                         Начать тестирование
                     </a>
                 </div>
@@ -739,11 +728,12 @@ window.onload = function () {
     if (!window.WebApp) return renderError();
 
     const initData = window.WebApp.initData;
+    const synchronization = window.WebApp.initDataUnsafe.start_param ?? null;
 
     fetch("/max-init", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ initData: initData })
+        body: JSON.stringify({ initData: initData, synchronization: synchronization })
     })
     .then(res => res.json())
     .then(data => {

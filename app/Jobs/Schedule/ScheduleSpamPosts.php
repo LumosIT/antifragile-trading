@@ -17,6 +17,8 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use PhpParser\Node\Expr\Throw_;
+use Throwable;
 
 class ScheduleSpamPosts implements ShouldQueue
 {
@@ -49,9 +51,7 @@ class ScheduleSpamPosts implements ShouldQueue
 
     public function getUsersBuilder(Post $post) : Builder
     {
-
-        switch($post->type){
-
+        switch($post->type) {
             case PostTypes::FIRST_STAIR:
                 return User::query()
                     ->where('meta_is_pre_form_filled', false)
@@ -68,9 +68,7 @@ class ScheduleSpamPosts implements ShouldQueue
 
             default:
                 throw new \Exception('Unknown post type');
-
         }
-
     }
 
     public function getPosts(Carbon $now): \Generator
@@ -97,8 +95,6 @@ class ScheduleSpamPosts implements ShouldQueue
                 ->min('index');
 
             foreach ($posts as $post) {
-
-                //Есть ли следующий элемент
                 $isLatest = ($post->index === $latestIndex);
 
                 $users = $this->getUsersBuilder($post)
@@ -128,9 +124,7 @@ class ScheduleSpamPosts implements ShouldQueue
 
     public function handle(TelegramWelcomeService $telegramWelcomeService, MaxBaseService $maxBaseService)
     {
-
         $now = now();
-
         $posts = $this->getPosts($now);
 
         foreach($posts as [$post, $users]){
@@ -139,14 +133,12 @@ class ScheduleSpamPosts implements ShouldQueue
             foreach ($users as $user) {
 
                 try {
-                    if($user->type === 'telegram') {
-                        $telegramWelcomeService->sendSpamBlock($user, $post);
-                    } else {
-                        $maxBaseService->sendSpamBlock($user, $post);
-                    }
-                } catch (\Throwable $e){
-                    Log::error($e);
-                }
+                    $telegramWelcomeService->sendSpamBlock($user, $post);
+                } catch (Throwable $e) {}
+
+                try {
+                    $maxBaseService->sendSpamBlock($user, $post);
+                } catch (Throwable $e) {                }
 
                 $user->spam_stage = $post->index + 1;
                 $user->last_spam_at = $now;
@@ -155,12 +147,8 @@ class ScheduleSpamPosts implements ShouldQueue
                 if(!(++$i % $this->getDelayInterval())) {
                     time_nanosleep($this->getDelayDuration(), 0);
                 }
-
             }
-
         }
-
-
     }
 
 }

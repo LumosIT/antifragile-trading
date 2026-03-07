@@ -103,7 +103,7 @@ class TelegramUpgradeService
         ]);
 
         $service = app(MaxService::class);
-        $service->sendMessage($user->chat, "Вы получили возможность пройти тестирование🎉🎉\n\nВы можете это сделать в приложении📲");
+        $service->sendMessage($user->max_chat, "Вы получили возможность пройти тестирование🎉🎉\n\nВы можете это сделать в приложении📲");
     }
 
     public function sendQuestion(User $user, int $question_index = 0, int $score = 0) : Message

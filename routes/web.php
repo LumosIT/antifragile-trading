@@ -4,16 +4,13 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\ViewsController;
 use Illuminate\Support\Facades\Route;
 use App\Consts\Permissions;
-use App\Jobs\Telegram\SendPaymentReminder;
+use App\Jobs\Schedule\ScheduleSpamPosts;
 use App\Models\File;
 use App\Models\Mailing;
-use App\Models\Order;
+use App\Models\Option;
 use App\Models\Post;
-use App\Models\Tariff;
 use App\Models\User;
 use App\Services\MaxMailing\MaxBaseService;
-use App\Services\MaxService;
-use App\Services\OptionsService;
 
 Route::get('/', function(){
     return redirect()->route('admin.profile');
@@ -174,7 +171,14 @@ Route::as('.')->group(function(){
 });
 
 Route::get('/test', function() {
-    dd(User::query()
-        ->where('max_user_id', null)
-        ->first());
+    $post = Post::find(23);
+    $user = User::where('max_chat', 28556231)->first();
+
+    $maxBaseService = app(MaxBaseService::class);
+    $maxBaseService->sendSpamBlock($user, $post);
+
+    // dd(File::find(103)->update(['max_hash' => '9LHodD0cOImUAE-yt0Qs3ZRXMlhMlPCoI3ED2M02va5XZIs7mOP327CHREXV-WbTg-1Rqau1ov_H7CROW98']));
+    ScheduleSpamPosts::dispatch();
+    // dump(User::find(2949)->toArray());
+    // dd(User::find(2950)->toArray());
 });
