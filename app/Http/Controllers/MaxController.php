@@ -40,7 +40,6 @@ class MaxController extends Controller
             
             // $service->test($user);
             $service->handle($user, $request->input('payload'));
-
         } catch(Throwable $e) {
             Log::alert('max webhook error', [
                 'message' => $e->getMessage(),

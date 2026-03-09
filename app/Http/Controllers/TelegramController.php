@@ -422,20 +422,17 @@ class TelegramController extends Controller
 
             return true;
         } else if(str_starts_with($command, 'synchronization')) {
-            $maxChat = explode('#', $command)[1] ?? null;
+            $token = explode('-', $command)[1] ?? null;
 
-            if(!filled($maxChat)) {
+            if(!filled($token)) {
                 $this->telegramService->send($user, "Не верная команда синхронизации. Пример правильной команды: /synchronization#12345678911221");
                 return;
             }
 
-            $response = $this->userService->synchronizationWithMax($user, $maxChat);
+            $response = $this->userService->synchronizationWithMax($user, $token);
 
-            if($response) {
-                $this->telegramService->send($user, "Синхронизация завершена! \n" .
-                    "Перезапустите приложение MAX для корректной работы");
-            } else {
-                $this->telegramService->send($user, "Не правильный набор данных или синхронизация была совершена ранее");   
+            if(filled($response)) {
+                $this->telegramService->send($user, $response);
             }
         }
 

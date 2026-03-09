@@ -498,8 +498,10 @@ class TelegramBaseService
 
         if(is_null($user->max_chat)) {
             $maxLink = "https://max.ru/id745115760361_bot?start=synchronization-$token";
+            $extra = "\nДля ручной синхронизации вставьте эту команду в MAX бота\n<code>/synchronization-$token</code>";
         } else {
             $maxLink = $this->optionsService->get('max_invite_link');
+            $extra = '';
         }
 
         return $this->sendMenu(
@@ -509,7 +511,7 @@ class TelegramBaseService
                 'max_link' => $maxLink,
                 'expired' => $user->tariff_expired_at->format('d.m.Y H:i'),
                 'order_id' => $order ? $order->code : $this->ordersService->generateUniqueCode()
-            ])
+            ]) . $extra
         );
     }
 

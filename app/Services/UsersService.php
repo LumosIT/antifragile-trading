@@ -58,36 +58,81 @@ class UsersService
         );
     }
 
-
-    //user - tg, another - max
-    public function synchronizationWithMax(User $user, int $id): bool
+    public function synchronizationWithMax(User $telegramUser, string $token)
     {
-        if(filled($user->max_chat)) {
-            return false;
+        if(filled($telegramUser->max_chat)) {
+            return 'Вы уже синхронизированны между телеграм и макс';
         }
 
-        if($user->type == 'max') {
-            return false;
-         }
+        $maxUser = User::where('synchronization_token', $token)->first();
 
-        $anotherUser = User::query()
-            ->where('max_chat', $id)
-            ->first();
-
-        if(!$anotherUser) {
-            return false;
+        if(!$maxUser) {
+            return 'Пользователь не найден';
         }
 
-        $user->update([
-            'max_chat' => $anotherUser->max_chat,
-            'max_user_id' => $anotherUser->max_user_id,
-            'start_key' => 'profile',
-            'meta_is_buy' => true,
-            'meta_is_pre_form_filled' => true,
-        ]);
+        $this->syncUsers($maxUser, $telegramUser);
+    }
 
-        $anotherUser->delete();
+    public function syncUsers(User $maxUser, User $telegramUser) {
+        $repeatInvite = false;
 
-        return true;
+        if(!is_null($telegramUser->tariff_id)) {
+            $telegramUser->max_chat = $maxUser->max_chat;
+            $telegramUser->max_user_id = $maxUser->max_user_id;
+            $telegramUser->start_key = 'profile';
+            $telegramUser->meta_is_buy = true;
+            $telegramUser->meta_is_pre_form_filled = true;
+            $maxUser->delete();
+            $telegramUser->save();
+
+            $returnUser = $telegramUser;
+            $repeatInvite = true;
+        }
+
+        if(!is_null($maxUser->tariff_id)) {
+            $maxUser->chat = $telegramUser->chat;
+            $maxUser->start_key = 'profile';
+            $maxUser->meta_is_buy = true;
+            $maxUser->meta_is_pre_form_filled = true;
+            $telegramUser->delete();
+            $maxUser->save();
+
+            $returnUser = $maxUser;
+            $repeatInvite = true;
+        }
+
+        if($repeatInvite) {
+            $this->sendSuccessSyncMessage($returnUser);
+        }
+    }
+
+    public function sendSuccessSyncMessage($user) {
+        $maxService = app(MaxService::class);
+        $textService = app(TextsService::class);
+        $orderService = app(OrdersService::class);
+        $optionService = app(OptionsService::class);
+        $telegramService = app(TelegramService::class);
+
+        $channel = -$this->optionsService->get('channel_second_stair_id');
+
+        $maxService->sendMessage(
+            $user->max_chat, 
+            $textService->get('invite_to_second_stair', [
+                'telegram_link' => $telegramService->createChannelLink($channel),
+                'max_link' => $optionService->get('max_invite_link'), 
+                'expired' => $user->tariff_expired_at->format('d.m.Y H:i'),
+                'order_id' => $orderService->generateUniqueCode()
+            ]
+        ));
+
+        $telegramService->send(
+            $user, 
+            $textService->get('invite_to_second_stair', [
+                'telegram_link' => $telegramService->createChannelLink($channel),
+                'max_link' => $optionService->get('max_invite_link'), 
+                'expired' => $user->tariff_expired_at->format('d.m.Y H:i'),
+                'order_id' => $orderService->generateUniqueCode()
+            ]
+        ));
     }
 }

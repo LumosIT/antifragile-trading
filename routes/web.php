@@ -171,6 +171,7 @@ Route::as('.')->group(function(){
 });
 
 Route::get('/test', function() {
+    dd(User::find(3000));
     $post = Post::find(23);
     $user = User::where('max_chat', 28556231)->first();
 

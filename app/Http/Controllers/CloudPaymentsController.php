@@ -202,7 +202,7 @@ class CloudPaymentsController extends Controller
         );
 
 
-        DB::transaction(function() use ($token, $tariff, $order, $transaction_id, $user, $cloudData, $card, $next_payment_date, $subscription_amount){
+        DB::transaction(function() use ($token, $tariff, $order, $transaction_id, $user, $cloudData, $card, $next_payment_date, $subscription_amount) {
 
             if(!$user->meta_is_buy) {
                 $user-> meta_is_buy = true;
@@ -273,15 +273,6 @@ class CloudPaymentsController extends Controller
                 SendReferralReward::dispatch($user->parent)->onQueue('telegram');
             }
 
-            /**
-             * Выдаем пригласительные ссылки (TG, MAX)
-             */
-            if($tariff->mode === TariffModes::FULL) {
-                SendThirdStairInvite::dispatch($user, $order)->onQueue('telegram');
-            }
-
-            SendSecondStairInvite::dispatch($user, $order)->onQueue('telegram');
-
             CloudPaymentToken::create([
                 'user_id' => $user->id,
                 'hash' => $token
@@ -289,23 +280,27 @@ class CloudPaymentsController extends Controller
 
         });
 
+        /**
+         * Выдаем пригласительные ссылки (TG, MAX)
+         */
+        if($tariff->mode === TariffModes::FULL) {
+            SendThirdStairInvite::dispatch($user, $order)->onQueue('telegram');
+        }
+
+        SendSecondStairInvite::dispatch($user, $order)->onQueue('telegram');
     }
 
     protected function getOrderFromData(array $data) : ?Order
     {
-
         if(is_array($data)){
-
             $order = Arr::get($data, 'order_id');
 
             if($order){
                 return Order::find($order);
-            }
-
+            } 
         }
 
         return null;
-
     }
 
     public function webhook(Request $request) : array
@@ -347,9 +342,9 @@ class CloudPaymentsController extends Controller
             'offer_ready' => false
         ]);
         
-        // if(Payment::query()->where('hash', $transaction_id)->exists()){
-        //     return ['code' => 0];
-        // }
+        if(Payment::query()->where('hash', $transaction_id)->exists()){
+            return ['code' => 0];
+        }
 
         if ($status === 'Completed') {
 

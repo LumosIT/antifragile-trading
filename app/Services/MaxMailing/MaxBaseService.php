@@ -19,6 +19,7 @@ use App\Services\StatisticService;
 use App\Services\SubscriptionsService;
 use App\Services\MaxMailing\MaxWelcomeService;
 use App\Services\TelegramService;
+use App\Services\UsersService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -78,9 +79,7 @@ class MaxBaseService
         
         if(filled($payload)) {
             $this->registerReferral($user, $payload);
-            if($this->synchronization($user, $payload)) {
-                return;
-            }
+            $this->synchronization($user, $payload);
         }
 
         if(str_starts_with($this->message, 'Перейти к оплате') || str_starts_with($this->message, 'Купить')) {
@@ -106,6 +105,8 @@ class MaxBaseService
             }
 
             return true;
+        } else if(str_starts_with($this->message, '/synchronization-')) {
+            $this->synchronization($user, str_replace('/', '', $this->message));
         } else if($this->message == 'Оплатить вход на третью ступень') {
             $tariff = Tariff::find(1);
             
@@ -124,10 +125,12 @@ class MaxBaseService
 
             return true;
         } else if($this->message == '/synchronization') {
+            $token = $user->createOrGetSynchronizationToken();
+
             $this->maxService->sendMessage(
                 $user->max_chat,
                 "Вставьте этот код в телеграм-бота https://t.me/club257bot\n\n" .
-                "/synchronization#{$user->max_chat}",
+                "/synchronization-$token",
             );
         } else if($this->message == 'Отменить подписку') {
             $this->maxService->sendMessage(
@@ -194,10 +197,8 @@ class MaxBaseService
 
     protected function synchronization(User $maxUser, string $payload)
     {
-        $repeatInvite = false;
-
         if(is_integer($maxUser->chat)) {
-            return $repeatInvite;
+            $this->maxService->sendMessage($maxUser->max_chat, "Ваш аккаунт уже был снихронизирован ранее\n\n$maxUser->chat");
         }
 
         if(str_starts_with($payload, 'synchronization-')) {
@@ -205,49 +206,10 @@ class MaxBaseService
             $telegramUser = User::where('synchronization_token', $token)->first();
 
             if($telegramUser && $telegramUser->id !== $maxUser->id) {
-                if(!is_null($telegramUser->tariff_id)) {
-                    $telegramUser->max_chat = $maxUser->max_chat;
-                    $telegramUser->max_user_id = $maxUser->max_user_id;
-                    $telegramUser->start_key = 'profile';
-                    $telegramUser->meta_is_buy = true;
-                    $telegramUser->meta_is_pre_form_filled = true;
-                    $maxUser->delete();
-                    $telegramUser->save();
-
-                    $returnUser = $telegramUser;
-                    $repeatInvite = true;
-                }
-
-                if(!is_null($maxUser->tariff_id)) {
-                    $maxUser->chat = $telegramUser->chat;
-                    $maxUser->start_key = 'profile';
-                    $maxUser->meta_is_buy = true;
-                    $maxUser->meta_is_pre_form_filled = true;
-                    $telegramUser->delete();
-                    $maxUser->save();
-
-                    $returnUser = $maxUser;
-                    $repeatInvite = true;
-                }
+                $userService = app(UsersService::class);
+                $userService->syncUsers($maxUser, $telegramUser);
             }
         }
-
-        if($repeatInvite) {
-            $channel = -$this->optionsService->get('channel_second_stair_id');
-            $telegramService = app(TelegramService::class);
-
-            $this->maxService->sendMessage(
-                $returnUser->max_chat, 
-                $this->textsService->get('invite_to_second_stair', [
-                    'telegram_link' => $telegramService->createChannelLink($channel),
-                    'max_link' => $this->optionsService->get('max_invite_link'), 
-                    'expired' => $returnUser->tariff_expired_at->format('d.m.Y H:i'),
-                    'order_id' => $this->ordersService->generateUniqueCode()
-                ]
-            ));
-        }
-
-        return $repeatInvite;
     }
 
     public function sendOffer(User $user, Tariff $tariff)
@@ -499,9 +461,11 @@ class MaxBaseService
             $telegramService = app(TelegramService::class);
             $channel = -$this->optionsService->get('channel_second_stair_id');
             $telegramLink = $telegramService->createChannelLink($channel);
+            $extra = '';
         } else {
             $token = $user->createOrGetSynchronizationToken();
             $telegramLink = "https://t.me/club257bot?start=synchronization-$token";
+            $extra = "\nИли вставьте эту команду в Telegram бота\n\n/synchronization-$token";
         }
 
         return $this->maxService->sendMessage(
@@ -511,7 +475,7 @@ class MaxBaseService
                 'max_link' => $this->optionsService->get('max_invite_link'), 
                 'expired' => $user->tariff_expired_at->format('d.m.Y H:i'),
                 'order_id' => $order ? $order->code : $this->ordersService->generateUniqueCode()
-            ])
+            ]) . $extra
         );
     }
 
