@@ -19,7 +19,6 @@ use App\Services\StatisticService;
 use App\Services\SubscriptionsService;
 use App\Services\MaxMailing\MaxWelcomeService;
 use App\Services\TelegramService;
-use App\Services\UsersService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -631,7 +630,6 @@ class MaxBaseService
             }
 
         } else {
-            Log::info($text);
             return $this->maxService->sendMessage($user->max_chat, $text);
         }
     }

@@ -72,7 +72,6 @@ class MaxService
 
     function sendMessage(string $chat, string $text, array $keyboard = [], $parseMode = 'html'): array
     {
-        Log::info($text);
         $url = "https://platform-api.max.ru/messages?chat_id=" . $chat;
 
         $data = [
@@ -231,21 +230,27 @@ class MaxService
         return $allMembers;
     }
 
-    public function sendFile(string $chat, string $fileToken, string $caption, $type = 'file'): array
+    public function sendFile(string $chat, string $fileToken, string $caption, $type = 'file', $buttons = []): array
     {
         $url = "https://platform-api.max.ru/messages?chat_id=" . $chat;
+
+        $attachments = [
+            [
+                "type" => $type,
+                "payload" => [
+                    "token" => $fileToken
+                ]
+            ],
+        ];
+
+        if(count($buttons) > 0) {
+            $attachments[] = $buttons;
+        }
 
         $data = [
             "text" => $caption,
             "format" => "html",
-            "attachments" => [
-                [
-                    "type" => $type,
-                    "payload" => [
-                        "token" => $fileToken
-                    ]
-                ]
-            ]
+            "attachments" => $attachments
         ];
 
         $ch = curl_init($url);

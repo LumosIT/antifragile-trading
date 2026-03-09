@@ -115,8 +115,8 @@ class MailingController extends Controller
 
             // если загружено видео, то max требуетс 20-30с, чтобы его обработать и он смог его присылать юзеру
             SendMailing::dispatch($mailing)
-                ->onQueue('telegram')
-                ->delay(now()->addMinute());
+                ->onQueue('telegram');
+                // ->delay(now()->addMinute());
 
             return $mailing;
         });

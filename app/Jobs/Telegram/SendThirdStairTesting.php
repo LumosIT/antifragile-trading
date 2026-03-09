@@ -6,6 +6,7 @@
 namespace App\Jobs\Telegram;
 
 use App\Models\User;
+use App\Services\MaxMailing\MaxUpgradeService;
 use App\Services\TelegramMailing\TelegramUpgradeService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -25,14 +26,14 @@ class SendThirdStairTesting implements ShouldQueue
     }
 
 
-    public function handle(TelegramUpgradeService $telegramUpgradeService)
+    public function handle(TelegramUpgradeService $telegramUpgradeService, MaxUpgradeService $maxUpgradeService)
     {
         try {
             $telegramUpgradeService->sendInvite($this->user);
         } catch (\Exception $e) {}
 
         try {
-            $telegramUpgradeService->sendMaxInvite($this->user);
+            $maxUpgradeService->sendMaxInvite($this->user);
         } catch (\Exception $e) {}
     }
 }

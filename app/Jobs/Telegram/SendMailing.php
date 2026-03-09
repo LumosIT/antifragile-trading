@@ -12,7 +12,9 @@ use App\Models\File;
 use App\Models\Mailing;
 use App\Models\Tariff;
 use App\Models\User;
+use App\Services\MaxMailing\MaxUpgradeService;
 use App\Services\MaxService;
+use App\Services\TelegramMailing\TelegramUpgradeService;
 use App\Services\TelegramService;
 use App\Services\TextsService;
 use App\Utilits\Telegram\InputMediaDocument;
@@ -35,9 +37,11 @@ class SendMailing implements ShouldQueue
     protected $textsService;
     protected $telegramService;
     protected $maxService;
+    protected $maxUpgradeService;
 
     public function __construct(Mailing $mailing)
     {
+        $this->maxUpgradeService = app(MaxUpgradeService::class);
         $this->mailing = $mailing;
     }
 
@@ -78,14 +82,6 @@ class SendMailing implements ShouldQueue
         if($this->mailing->last_user_id) {
             $query->where('id', '<', $this->mailing->last_user_id);
         }
-
-        if($this->mailing->type == 'telegram') {
-            $query->whereNull('max_chat');
-        }  
-
-        if($this->mailing->type == 'max') {
-            $query->whereNotNull('max_chat');
-        }  
 
         return $query;
     }
@@ -192,26 +188,30 @@ class SendMailing implements ShouldQueue
 
         $files_count = $this->mailing->files->count();
 
+        if(in_array('test3', $this->mailing->buttons)) {
+            $this->maxUpgradeService->sendMaxInvite($user);
+        }
+
         if(!$files_count) {
             return $this->maxService->sendMessage($user->max_chat, $text, $maxButtons);
         } elseif ($files_count === 1) {
             $file = $this->mailing->files->first();
             switch($file->type) {
                 case FileTypes::DOCUMENT:
-                    return $this->maxService->sendFile($user->max_chat, $file->max_hash, $text, 'file');
+                    return $this->maxService->sendFile($user->max_chat, $file->max_hash, $text, 'file', $maxButtons);
                 case FileTypes::VIDEO:
-                    return $this->maxService->sendFile($user->max_chat, $file->max_hash, $text, 'video');
+                    return $this->maxService->sendFile($user->max_chat, $file->max_hash, $text, 'video', $maxButtons);
                 case FileTypes::PHOTO:
-                    return $this->maxService->sendImage($user->max_chat, $file->max_hash, $text);
+                    return $this->maxService->sendImage($user->max_chat, $file->max_hash, $text, $maxButtons);
                 default:
-                    return $this->maxService->sendMessage($user->max_chat, $text);
+                    return $this->maxService->sendMessage($user->max_chat, $text, $maxButtons);
             }
         } else {
             foreach($this->mailing->files as $key => $file){
                 $this->maxService->sendFile($user->max_chat, $file->max_hash, "Файл");
 
                 if(array_key_last($this->mailing->files->toArray()) == $key) {
-                    return $this->maxService->sendFile($user->max_chat, $file->max_hash, $text);
+                    return $this->maxService->sendFile($user->max_chat, $file->max_hash, $text, $maxButtons);
                 }
             }
         }
@@ -252,17 +252,27 @@ class SendMailing implements ShouldQueue
 
             $error1 = false;
             $error2 = false;
-            try {
-                $this->sendMessage($user);
-            } catch (\Throwable $exception) {
-                $error1 = true;
-            }
 
-            try {
-                $this->sendMaxMessage($user);
-            } catch (\Throwable $exception) {
-                $error2 = true;
-            }
+            if($this->mailing->type == 'telegram' || $this->mailing->type == 'all') {
+                try {
+                    $this->sendMessage($user);
+                } catch (\Throwable $exception) {
+                    $error1 = true;
+                }
+            }  
+
+            if($this->mailing->type == 'max' || $this->mailing->type == 'all') {
+                try {
+                    $this->sendMaxMessage($user);
+                } catch (\Throwable $exception) {
+                    Log::info('dispatch error', [
+                        $exception->getMessage(),
+                        $exception->getFile(),
+                        $exception->getLine()
+                    ]);
+                    $error2 = true;
+                }
+            }  
 
             if($error1 && $error2) {
                 $e++;
