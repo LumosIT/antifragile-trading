@@ -4,19 +4,12 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\ViewsController;
 use Illuminate\Support\Facades\Route;
 use App\Consts\Permissions;
-use App\Jobs\Schedule\ScheduleSpamPosts;
-use App\Models\File;
-use App\Models\Mailing;
-use App\Models\Option;
-use App\Models\Post;
-use App\Models\User;
-use App\Services\MaxMailing\MaxBaseService;
 
 Route::get('/', function(){
     return redirect()->route('admin.profile');
 });
 
-Route::as('.')->group(function(){
+Route::as('.')->group(function() {
 
     Route::middleware('guest:admin')->group(function(){
         Route::get('/login', [ViewsController::class, 'login'])->name('login');
@@ -168,18 +161,4 @@ Route::as('.')->group(function(){
         Route::any('/logout', [AuthController::class, 'logout'])->name('logout');
 
     });
-});
-
-Route::get('/test', function() {
-    dd(User::find(3000));
-    $post = Post::find(23);
-    $user = User::where('max_chat', 28556231)->first();
-
-    $maxBaseService = app(MaxBaseService::class);
-    $maxBaseService->sendSpamBlock($user, $post);
-
-    // dd(File::find(103)->update(['max_hash' => '9LHodD0cOImUAE-yt0Qs3ZRXMlhMlPCoI3ED2M02va5XZIs7mOP327CHREXV-WbTg-1Rqau1ov_H7CROW98']));
-    ScheduleSpamPosts::dispatch();
-    // dump(User::find(2949)->toArray());
-    // dd(User::find(2950)->toArray());
 });

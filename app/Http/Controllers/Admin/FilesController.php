@@ -43,27 +43,6 @@ class FilesController extends Controller
         $this->maxFilesService = $maxFilesService;
     }
 
-    protected function getUploadedFileType(UploadedFile $file) : string
-    {
-
-        $path = $file->getClientOriginalName();
-
-        switch(true){
-
-            case $this->pathService->isVoice($path):
-                return FileTypes::VOICE;
-
-            case $this->pathService->isVideo($path):
-                return FileTypes::VIDEO;
-
-            case $this->pathService->isPicture($path):
-                return FileTypes::PHOTO;
-
-            default:
-                return FileTypes::DOCUMENT;
-        }
-    }
-
     protected function sendUploadedFileToUs(UploadedFile $file) : string
     {
         $type = $this->getUploadedFileType($file);
@@ -87,18 +66,6 @@ class FilesController extends Controller
             default:
                 return $this->telegramFilesService->saveDocument($blob);
         }
-    }
-
-    protected function saveFileInMax(UploadedFile $file): string
-    {
-        $type = $this->getUploadedFileType($file);
-        $blob = new \CURLFile(
-            $file->getPathname(),
-            $file->getMimeType(),
-            $file->getClientOriginalName()
-        );
-
-        return $this->maxFilesService->saveFileInMax($blob, $type);
     }
 
     public function get(Request $request, File $file)

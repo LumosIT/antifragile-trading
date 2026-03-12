@@ -48,8 +48,12 @@ class MaxBaseService
     public $max_chat;
     public $user_id; 
 
-    public function __construct() {
-        $this->maxService = new MaxService(config('max.token'));
+    public function __construct($token = null) {
+        if($token == null) {
+            $token = config('max.token');
+        }
+
+        $this->maxService = new MaxService($token);
         $this->textsService =  new TextsService();
         $this->optionsService = new OptionsService();
         $this->pathService = new PathService();
@@ -279,7 +283,7 @@ class MaxBaseService
         $this->maxService->sendImage($user->max_chat, 'https://petr-petr.ru/storage/content/main.jpg', $message, $keyboard ?? []);
     }
 
-    public function getOrCreateUser($data = null): User
+    public function getOrCreateUser($data = null, $support = false): User
     {
         if(isset($data)) {
             $this->firstName = $data['first_name'];
@@ -288,22 +292,28 @@ class MaxBaseService
             $this->user_id = $data['max_user_id'];
         }
 
-        return DB::transaction(function () {
+        return DB::transaction(function () use($support) {
             $user = User::query()
                 ->where('max_user_id', $this->user_id)
                 ->first();
 
             if (!$user) {
-                $user = User::create([
+                $data = [
                     'max_user_id' => $this->user_id,
                     'chat' => md5(time()),
-                    'max_chat' => $this->max_chat,
                     'name' => $this->firstName,
                     'username' => $this->lastName,
                     'picture' => null,
                     'type' => 'max',
-                    'start_key' => 'end',
-                ]);
+                ];
+
+                if($support) {
+                    $data['max_support_chat'] = $this->max_chat;
+                } else {
+                    $data['max_chat'] = $this->max_chat;
+                }
+
+                $user = User::create($data);
                 $this->statisticService->onRegister($user);
                 $this->statisticService->onActivity($user);
             } else {
@@ -311,11 +321,15 @@ class MaxBaseService
                     $this->statisticService->onActivity($user);
                 }
 
-                $user->max_chat = $this->max_chat;
+                if($support) {
+                    $user->max_support_chat = $this->max_chat;
+                } else {
+                    $user->max_chat = $this->max_chat;
+                }
+                
                 $user->last_activity_at = now();
                 $user->is_alive = true;
                 $user->died_at = null;
-                $user->type = 'max';
                 $user->save();
             }
 
@@ -465,7 +479,7 @@ class MaxBaseService
         } else {
             $token = $user->createOrGetSynchronizationToken();
             $telegramLink = "https://t.me/club257bot?start=synchronization-$token";
-            $extra = "\nИли вставьте эту команду в Telegram бота\n\n/synchronization-$token";
+            $extra = "\nДля ручной синхронизации вставьте эту команду в Telegram бота\n\n/synchronization-$token";
         }
 
         return $this->maxService->sendMessage(

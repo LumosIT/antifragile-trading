@@ -22,7 +22,6 @@ use App\Services\TextsService;
 use App\Services\UsersService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use TelegramBot\Api\Types\Inline\InlineKeyboardMarkup;
 
 class TelegramController extends Controller

@@ -65,7 +65,6 @@ class MaxFilesService {
     protected function uploadFileToUrl(string $uploadUrl, CURLFile $file): string
     {
         $ch = curl_init($uploadUrl);
-
         $postData = [
             "data" => $file
         ];

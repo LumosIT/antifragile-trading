@@ -94,6 +94,13 @@
                 <span class="side-menu__label">Авторассылки</span>
             </a>
         </li>
+        <li class="slide">
+            <a href="/support/page" class="side-menu__item">
+                <i class="ri-mail-check-fill side-menu__icon"></i>
+                <i class="ri-arrow-right-s-line side-menu__angle"></i>
+                <span class="side-menu__label">Чат поддержки <span id="support-counter">({{ App\Models\Message::where('read', false)->count() }})</span></span>
+            </a>
+        </li>
         @endpermission
         @permission(Permissions::STATISTIC)
         <li class="slide">
@@ -175,4 +182,22 @@
 
 @section('scripts')
     @stack('scripts')
+    <script>
+        function updateUnreadCounter() {
+            $.ajax({
+                type: 'POST',
+                url: '/support/get-undread-messages',
+                success: function(response) {
+                    $('#support-counter').text(`(${response})`);
+                },
+                error: function() {
+                    console.error('Ошибка при получении количества непрочитанных сообщений');
+                }
+            });
+        }
+
+        updateUnreadCounter();
+
+        setInterval(updateUnreadCounter, 5000);
+    </script>
 @endsection

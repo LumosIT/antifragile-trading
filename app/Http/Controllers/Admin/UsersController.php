@@ -26,7 +26,6 @@ class UsersController extends Controller
 
     public function list(Request $request) : PerfectPaginatorResponse
     {
-
         $data = $request->validate([
             'is_banned' => ['nullable', 'integer'],
             'is_alive' => ['nullable', 'integer'],

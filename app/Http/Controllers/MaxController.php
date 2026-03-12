@@ -34,7 +34,7 @@ class MaxController extends Controller
                 return response()->json();
             }
 
-            $service = new MaxBaseService();
+            $service = new MaxBaseService(config('max.token'));
             $service->parseMaxWebhook($data);
             $user = $service->getOrCreateUser();
             
@@ -65,7 +65,7 @@ class MaxController extends Controller
 
     public function validateMaxWebAppData(Request $request): JsonResponse
     {
-        $maxService = new MaxBaseService();
+        $maxService = new MaxBaseService(config('max.token'));
 
         return response()->json($maxService->validateMaxWebAppData($request->input('initData')));
     }

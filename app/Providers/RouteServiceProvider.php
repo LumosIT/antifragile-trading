@@ -32,6 +32,11 @@ class RouteServiceProvider extends ServiceProvider
                 ->group(base_path('routes/max.php'));
 
             Route::middleware('public')
+                ->namespace($this->namespace)
+                ->prefix('/support')
+                ->group(base_path('routes/support.php'));
+
+            Route::middleware('public')
                 ->as('public')
                 ->namespace($this->namespace)
                 ->group(base_path('routes/public.php'));

@@ -47,7 +47,6 @@ class AdminPrepare
 
     static public function user(User $user, bool $fullData = false) : array
     {
-
         $data = $user->only([
             'id',
             'name',
@@ -67,7 +66,7 @@ class AdminPrepare
             'type'
         ]);
 
-        if($fullData){
+        if($fullData) {
             $data += $user->only([
                 'fio',
                 'experience',
@@ -82,12 +81,10 @@ class AdminPrepare
         }
 
         return $data;
-
     }
 
     static public function tariff(Tariff $tariff) : array
     {
-
         return $tariff->only([
             'id',
             'name',
@@ -97,12 +94,10 @@ class AdminPrepare
             'price',
             'is_active'
         ]);
-
     }
 
     static public function promocode(Promocode $promocode) : array
     {
-
         $data = $promocode->only([
             'id',
             'code',
@@ -124,7 +119,6 @@ class AdminPrepare
         }
 
         return $data;
-
     }
 
     static public function payment(Payment $payment) : array
