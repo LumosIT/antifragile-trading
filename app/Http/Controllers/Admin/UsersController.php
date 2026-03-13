@@ -3,14 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Jobs\Telegram\KickFromChannels;
-use App\Jobs\Telegram\SendClearMenu;
 use App\Jobs\Telegram\SendOffer;
 use App\Jobs\Telegram\SendRestartWarning;
 use App\Jobs\Telegram\SendSecondStairInvite;
 use App\Jobs\Telegram\SendThirdStairInvite;
 use App\Jobs\Telegram\SendThirdStairTesting;
-use App\Models\Fund;
-use App\Models\StatisticDaily;
 use App\Models\Tariff;
 use App\Models\User;
 use App\Utilits\Prepare\AdminPrepare;
@@ -19,7 +16,6 @@ use App\Utilits\TableGenerator\PerfectPaginatorResponse;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 
 class UsersController extends Controller
 {

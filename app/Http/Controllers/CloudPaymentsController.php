@@ -306,7 +306,6 @@ class CloudPaymentsController extends Controller
     public function webhook(Request $request) : array
     {
         $json = collect($request->all());
-
         $account_id      = (int)$json->get('AccountId');
         $transaction_id  = (string)$json->get('TransactionId');
         $subscription_id = (string)$json->get('SubscriptionId');
@@ -322,7 +321,6 @@ class CloudPaymentsController extends Controller
         } catch (\Throwable $e){
             $data = $json->get('Data');
         }
-
 
         $user = User::find($account_id);
 
@@ -342,14 +340,12 @@ class CloudPaymentsController extends Controller
             'offer_ready' => false
         ]);
         
-        if(Payment::query()->where('hash', $transaction_id)->exists()){
+        if (Payment::query()->where('hash', $transaction_id)->exists()) {
             return ['code' => 0];
         }
 
         if ($status === 'Completed') {
-
             if ($subscription_id) {
-
                 $subscription = Subscription::where('code', $subscription_id)->first();
 
                 if(!$subscription){
@@ -361,9 +357,7 @@ class CloudPaymentsController extends Controller
                 }
 
                 $this->onContinuedPayment($user, $subscription, $transaction_id, $amount);
-
             } else {
-
                 $order = $this->getOrderFromData($data);
 
                 if(!$order || $order->user_id !== $user->id || $order->status !== OrderStatuses::ACTIVE){
@@ -375,12 +369,9 @@ class CloudPaymentsController extends Controller
                 }
 
                 $this->onNewPayment($user,$order,$order->tariff, $token, $transaction_id, $card);
-
             }
-
         }
 
         return ['code' => 0];
-
     }
 }

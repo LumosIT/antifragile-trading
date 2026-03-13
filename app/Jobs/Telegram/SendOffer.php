@@ -1,7 +1,4 @@
 <?php
-/**
- * Приглашение на 2 ступень
- */
 
 namespace App\Jobs\Telegram;
 

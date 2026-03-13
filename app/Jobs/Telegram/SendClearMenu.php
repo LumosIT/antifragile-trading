@@ -1,12 +1,8 @@
 <?php
-/**
- * Приглашение на 2 ступень
- */
 
 namespace App\Jobs\Telegram;
 
 use App\Models\User;
-use App\Services\TelegramMailing\TelegramBaseService;
 use App\Services\TelegramService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
