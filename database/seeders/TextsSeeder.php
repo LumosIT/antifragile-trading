@@ -79,6 +79,7 @@ class TextsSeeder extends Seeder
             $this->createText('alive_message');
             $this->createText('payment_reminder');
             $this->createText('cancel_reminder');
+            $this->createText('cancel_reminder_2');
             $this->createText('kick_message');
             $this->createText('remaining');
             $this->createText('warm_reward_1');

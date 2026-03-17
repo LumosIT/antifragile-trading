@@ -81,7 +81,6 @@ class CheckExpiredSubscriptions implements ShouldQueue
 
                 SendSubscribeCancelation::dispatch($user)->onQueue('telegram');
                 KickFromChannels::dispatch($user)->onQueue('telegram');
-
             });
 
         }

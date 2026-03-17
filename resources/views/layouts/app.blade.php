@@ -563,21 +563,6 @@
 
                     <!-- Start::header-content-left -->
                     <div class="header-content-left">
-
-                        <!-- Start::header-element -->
-                        <div class="header-element">
-                            <div class="horizontal-logo">
-                                <a href="{{ route('admin') }}" class="header-logo">
-                                    <img src="{{ tempAsset('/assets/logos/logo.png') }}" alt="logo" class="desktop-logo">
-                                    <img src="{{ tempAsset('/assets/logos/logo.png') }}" alt="logo" class="toggle-logo">
-                                    <img src="{{ tempAsset('/assets/logos/logo.png') }}" alt="logo" class="desktop-dark">
-                                    <img src="{{ tempAsset('/assets/logos/logo.png') }}" alt="logo" class="desktop-white">
-                                    <img src="{{ tempAsset('/assets/logos/logo.png') }}" alt="logo" class="toggle-dark">
-                                </a>
-                            </div>
-                        </div>
-                        <!-- End::header-element -->
-
                         <!-- Start::header-element -->
                         <div class="header-element mx-lg-0 mx-2">
                             <a aria-label="Hide Sidebar"

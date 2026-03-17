@@ -7,6 +7,7 @@ namespace App\Services;
  */
 
 use App\Exceptions\Users\NotEnoughBalanceException;
+use App\Models\Dialog;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
@@ -74,35 +75,41 @@ class UsersService
     }
 
     public function syncUsers(User $maxUser, User $telegramUser) {
-        $repeatInvite = false;
 
         if(!is_null($telegramUser->tariff_id)) {
             $telegramUser->max_chat = $maxUser->max_chat;
             $telegramUser->max_user_id = $maxUser->max_user_id;
+            $telegramUser->name_2 = $maxUser->name;
+            $telegramUser->username_2 = $maxUser->username;
             $telegramUser->start_key = 'profile';
             $telegramUser->meta_is_buy = true;
             $telegramUser->meta_is_pre_form_filled = true;
-            $maxUser->delete();
-            $telegramUser->save();
 
-            $returnUser = $telegramUser;
-            $repeatInvite = true;
+            $removedUser = $maxUser;
+            $savedUser = $telegramUser;
         }
 
         if(!is_null($maxUser->tariff_id)) {
             $maxUser->chat = $telegramUser->chat;
+            $maxUser->name_2 = $telegramUser->name;
+            $maxUser->username_2 = $telegramUser->username;
             $maxUser->start_key = 'profile';
             $maxUser->meta_is_buy = true;
             $maxUser->meta_is_pre_form_filled = true;
-            $telegramUser->delete();
-            $maxUser->save();
 
-            $returnUser = $maxUser;
-            $repeatInvite = true;
+            $removedUser = $telegramUser;
+            $savedUser = $maxUser;
         }
 
-        if($repeatInvite) {
-            $this->sendSuccessSyncMessage($returnUser);
+        if(isset($removedUser) && isset($savedUser)) {
+            Dialog::where('client_id', $removedUser->id)->update([
+                'client_id' => $savedUser->id,
+            ]);
+
+            $removedUser->delete();
+            $savedUser->save();
+
+            $this->sendSuccessSyncMessage($savedUser);
         }
     }
 

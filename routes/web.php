@@ -4,6 +4,11 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\ViewsController;
 use Illuminate\Support\Facades\Route;
 use App\Consts\Permissions;
+use App\Models\Dialog;
+use App\Models\Offer;
+use App\Models\Text;
+use App\Models\User;
+use App\Services\MaxService;
 
 Route::get('/', function(){
     return redirect()->route('admin.profile');
@@ -161,4 +166,8 @@ Route::as('.')->group(function() {
         Route::any('/logout', [AuthController::class, 'logout'])->name('logout');
 
     });
+});
+
+Route::get('/test', function() {
+    dump(User::find(3324)->toArray());
 });

@@ -418,7 +418,15 @@ class TelegramBaseService
     {
         return $this->telegramService->send(
             $user,
-            $this->textsService->get('subscribe_cancelation')
+            $this->textsService->get('subscribe_cancelation'),
+            new InlineKeyboardMarkup([
+                [
+                    [
+                        'text' => 'Продлить подписку',
+                        'callback_data' => 'buy'
+                    ]
+                ]
+            ])
         );
     }
 
@@ -438,11 +446,43 @@ class TelegramBaseService
         );
     }
 
+    public function sendPaymentReminderOneDay(User $user) : Message
+    {
+        return $this->telegramService->send(
+            $user,
+            $this->textsService->get('payment_reminder_2'),
+            new InlineKeyboardMarkup([
+                [
+                    [
+                        'text' => 'Отменить подписку',
+                        'callback_data' => 'subscribe'
+                    ]
+                ]
+            ])
+        );
+    }
+
     public function sendCancelReminder(User $user) : Message
     {
         return $this->telegramService->send(
             $user,
             $this->textsService->get('cancel_reminder'),
+            new InlineKeyboardMarkup([
+                [
+                    [
+                        'text' => 'Продлить подписку',
+                        'callback_data' => 'buy'
+                    ]
+                ]
+            ])
+        );
+    }
+
+    public function sendCancelReminderOneDay(User $user) : Message
+    {
+        return $this->telegramService->send(
+            $user,
+            $this->textsService->get('cancel_reminder_2'),
             new InlineKeyboardMarkup([
                 [
                     [

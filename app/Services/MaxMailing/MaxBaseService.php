@@ -539,7 +539,15 @@ class MaxBaseService
     {
         return $this->maxService->sendMessage(
             $user->max_chat,
-            $this->textsService->get('subscribe_cancelation')
+            $this->textsService->get('subscribe_cancelation'),
+            [
+                [
+                    [
+                        'type' => 'message',
+                        'text' => 'Продлить подписку',
+                    ]
+                ]
+            ]
         );
     }
 
@@ -559,11 +567,43 @@ class MaxBaseService
         );
     }
 
+    public function sendPaymentReminderOneDay(User $user)
+    {
+        return $this->maxService->sendMessage(
+            $user->max_chat,
+            $this->textsService->get('payment_reminder_2'),
+            [
+                [
+                    [
+                        'type' => 'message',
+                        'text' => 'Отменить подписку'
+                    ]
+                ]
+            ]
+        );
+    }
+
     public function sendCancelReminder(User $user)
     {
         return $this->maxService->sendMessage(
             $user->max_chat,
             $this->textsService->get('cancel_reminder'),
+            [
+                [
+                    [
+                        'type' => 'message',
+                        'text' => 'Продлить подписку',
+                    ]
+                ]
+            ]
+        );
+    }
+
+    public function sendCancelReminderOneDay(User $user)
+    {
+        return $this->maxService->sendMessage(
+            $user->max_chat,
+            $this->textsService->get('cancel_reminder_2'),
             [
                 [
                     [

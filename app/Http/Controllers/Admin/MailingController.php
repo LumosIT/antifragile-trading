@@ -13,6 +13,7 @@ use App\Utilits\Api\ApiError;
 use App\Utilits\Prepare\AdminPrepare;
 use App\Utilits\TableGenerator\Modern\ModernPerfectPaginator;
 use App\Utilits\TableGenerator\PerfectPaginatorResponse;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -72,12 +73,12 @@ class MailingController extends Controller
             'file_ids' => ['nullable', 'array'],
             'file_ids.*' => ['nullable', 'integer', 'exists:files,id'],
             'buttons' => ['nullable', 'array'],
+            'buttons.*' => ['string'],
+
             'type' => ['required', 'string'],
-            'buttons.*' => ['string']
-        ], [
-            'stages.min' => 'Вы не выбрали ни один сегмент',
-            'tariffs.min' => 'Вы не выбрали ни один тариф',
-            'file_id.exists' => 'Файл не найден'
+
+            'start_type' => ['required', 'in:now,delayed'],
+            'start_at' => ['nullable', 'date', 'after:now'],
         ]);
 
         $mailing = DB::transaction(function () use ($data) {
@@ -114,9 +115,15 @@ class MailingController extends Controller
             $mailing->files()->attach($files_ids);
 
             // если загружено видео, то max требуетс 20-30с, чтобы его обработать и он смог его присылать юзеру
+            $delay = now()->addSeconds(20);
+
+            if ($data['start_type'] === 'delayed' && !empty($data['start_at'])) {
+                $delay = Carbon::parse($data['start_at']);
+            }
+
             SendMailing::dispatch($mailing)
                 ->onQueue('telegram')
-                ->delay(now()->addSeconds(20));
+                ->delay($delay);
 
             return $mailing;
         });

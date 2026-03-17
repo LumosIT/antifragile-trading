@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use CURLFile;
-use Illuminate\Support\Facades\Log;
 
 class MaxService
 {
@@ -68,6 +66,22 @@ class MaxService
             'response' => json_decode($response, true),
             'error' => $error
         ];
+    }
+
+    public function deleteMessage(string $messageId) {
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => "https://platform-api.max.ru/messages?message_id=".$messageId,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CUSTOMREQUEST => "DELETE",
+            CURLOPT_HTTPHEADER => [
+                "Authorization: $this->token",
+                "Content-Type: application/json"
+            ],
+        ]);
+
+        curl_exec($ch);
+        curl_close($ch);
     }
 
     function sendMessage(string $chat, string $text, array $keyboard = [], $parseMode = 'html'): array
@@ -181,11 +195,6 @@ class MaxService
 
         $response = curl_exec($ch);
         $error = curl_error($ch);
-
-        Log::info('Kick User', [
-            $response,
-            $error
-        ]);
 
         curl_close($ch);
     }

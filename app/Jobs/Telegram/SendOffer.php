@@ -2,6 +2,7 @@
 
 namespace App\Jobs\Telegram;
 
+use App\Models\Offer;
 use App\Models\Tariff;
 use App\Models\User;
 use App\Services\MaxMailing\MaxBaseService;
@@ -11,6 +12,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class SendOffer implements ShouldQueue
 {
@@ -25,15 +27,28 @@ class SendOffer implements ShouldQueue
         $this->tariff = $tariff;
     }
 
-
     public function handle(TelegramBaseService $telegramBaseService, MaxBaseService $maxBaseService)
     {
         try {
-            $telegramBaseService->sendOffer($this->user, $this->tariff);
+            $telegramOffer = $telegramBaseService->sendOffer($this->user, $this->tariff);
+            $mid = $telegramOffer->getMessageId();
+            $this->saveOffer($mid, 'telegram');
         } catch (\Throwable $exception) {}
         
         try {
-            $maxBaseService->sendOffer($this->user, $this->tariff);
+            $maxOffer = $maxBaseService->sendOffer($this->user, $this->tariff);
+            $mid = $maxOffer['response']['message']['body']['mid'];
+            $this->saveOffer($mid, 'max');
         } catch (\Throwable $exception) {}
+    }
+
+    public function saveOffer(string $messageId, string $type) {
+        Offer::create([
+            'user_id' => $this->user->id,
+            'tariff_id' => $this->tariff->id,
+            'message_id' => $messageId,
+            'type' => $type,
+            'is_deleted' => false
+        ]);
     }
 }

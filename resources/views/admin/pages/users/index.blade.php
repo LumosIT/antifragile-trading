@@ -6,71 +6,92 @@
 
     <div class="card custom-card">
         <div class="card-header justify-content-between">
-            <div class="card-title">
-                Пользователи
+            <div class="card-title">Пользователи</div>
+            <div class="text-muted fs-13">
+                На странице отображено <span id="users_count_page" style="font-weight: bold">0</span> из <b>{{ App\Models\User::query()->count() }}</b> пользователей
             </div>
         </div>
         <div class="card-body p-0">
-            <form action="" method="post" autocomplete="off" class="d-flex align-items-center justify-content-between p-3" onsubmit="return false">
-                <input class="form-control me-2" id="datatable_search" placeholder="Поиск..." style="width:200px">
-                <div class="d-flex align-items-center justify-content-end">
+            <form action="" method="post" autocomplete="off"
+                class="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-between gap-2 p-3"
+                onsubmit="return false">
+
+                {{-- Левая часть --}}
+                <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-lg-auto">
+                    <input class="form-control" type="number" id="filter_user_id" placeholder="ID пользователя">
+                    <input class="form-control" id="datatable_search" placeholder="Поиск...">
+                </div>
+
+                {{-- Правая часть --}}
+                <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2 w-100 w-lg-auto">
+
                     <div class="input-group">
                         <div class="input-group-text">
                             <i class="ri-calendar-2-line"></i>
                         </div>
-                        <input type="text" class="form-control me-2" id="filter_date" placeholder="Date range picker" style="width: 200px;">
+                        <input type="text" class="form-control" id="filter_date" placeholder="Date range picker">
                     </div>
+
                     <button class="btn btn-white flex-shrink-0 datatable_filters_button" type="button">
                         <i class="ri-filter-3-line"></i>
-                        Фильтра
+                        Фильтр
                     </button>
                 </div>
+
+                {{-- Скрытые фильтры --}}
                 <div class="d-none">
-                    <div id="" class="py-2 datatable_filters" style="width: 200px;">
+                    <div class="py-2 datatable_filters w-100">
+
                         <div class="form-group mb-3">
-                            <label for="" class="fs-12">Платформа</label>
-                            <select class="form-control w-100" data-trigger name="choices-single-default" id="filter_type">
+                            <label class="fs-12">Платформа</label>
+                            <select class="form-control w-100" id="filter_type">
                                 <option value="">Не важно</option>
                                 <option value="telegram">Telegram</option>
                                 <option value="max">MAX</option>
                             </select>
                         </div>
+
                         <div class="form-group mb-3">
-                            <label for="" class="fs-12">Заблокирован</label>
-                            <select class="form-control w-100" data-trigger name="choices-single-default" id="filter_banned">
+                            <label class="fs-12">Заблокирован</label>
+                            <select class="form-control w-100" id="filter_banned">
                                 <option value="">Не важно</option>
                                 <option value="1">Есть</option>
                                 <option value="0">Нет</option>
                             </select>
                         </div>
+
                         <div class="form-group mb-3">
-                            <label for="" class="fs-12">Статус</label>
-                            <select class="form-control w-100" data-trigger name="choices-single-default" id="filter_alive">
+                            <label class="fs-12">Статус</label>
+                            <select class="form-control w-100" id="filter_alive">
                                 <option value="">Не важно</option>
                                 <option value="1">Активен</option>
                                 <option value="0">Ушёл</option>
                             </select>
                         </div>
+
                         <div class="form-group mb-3">
-                            <label for="" class="fs-12">Сегмент</label>
-                            <select class="form-control w-100" data-trigger name="choices-single-default" id="filter_stage">
+                            <label class="fs-12">Сегмент</label>
+                            <select class="form-control w-100" id="filter_stage">
                                 <option value="">Не важно</option>
                                 @foreach(App\Consts\UserStages::getTitles() as $code => $title)
                                     <option value="{{ $code }}">{{ $title }}</option>
                                 @endforeach
                             </select>
                         </div>
+
                         <div class="form-group mb-3">
-                            <label for="" class="fs-12">Тарифы</label>
-                            <select class="form-control w-100" data-trigger name="choices-single-default" id="filter_tariff_id">
+                            <label class="fs-12">Тарифы</label>
+                            <select class="form-control w-100" id="filter_tariff_id">
                                 <option value="">Не важно</option>
                                 @foreach($tariffs as $tariff)
                                     <option value="{{ $tariff->id }}">{{ $tariff->name }}</option>
                                 @endforeach
                             </select>
                         </div>
+
                     </div>
                 </div>
+
             </form>
             <div class="table-responsive">
                 <table class="table table-hover" id="datatable_custom">
@@ -94,7 +115,10 @@
             url : "{{ route('admin.api.users.list') }}",
             limit : 30,
             prepareResponse(json){
-                return json.response;
+                let resp = json.response;
+                $("#users_count_page").text(resp.items.length);
+
+                return resp;
             },
             columns : [
                 {
@@ -283,22 +307,28 @@
 
         initDatatableSearch(dataTable, $("#datatable_search"));
         initDatatableDateFilter(dataTable, $("#filter_date"));
-
         initDatatableFilter(dataTable, 'is_banned', $("#filter_banned"));
         initDatatableFilter(dataTable, 'is_alive', $("#filter_alive"));
         initDatatableFilter(dataTable, 'stage', $("#filter_stage"));
         initDatatableFilter(dataTable, 'tariff_id', $("#filter_tariff_id"));
         initDatatableFilter(dataTable, 'type', $("#filter_type"));
+        initDatatableFilter(dataTable, 'user_id', $("#filter_user_id"));
+
+        let userIdTimer = null;
+        $("#filter_user_id").on("keyup", function () {
+            clearTimeout(userIdTimer);
+            userIdTimer = setTimeout(() => {
+                $(this).trigger("change");
+            }, 400);
+        });
 
         initDatatableRemoveButton(dataTable, '.js-remove-datatable-button', 'Удалить пользователя?');
 
-        // переключение админ статуса
         $(document).on('click', '.toggle-admin-stage', function (e) {
             e.preventDefault();
 
             let el = $(this);
 
-            // защита от двойного клика
             if (el.data('loading')) {
                 return;
             }
@@ -306,7 +336,6 @@
             let id = el.data('id');
             let target = el.data('target');
 
-            // защита от дурака
             if (!id || !target) {
                 console.error('Некорректные данные для смены статуса');
                 return;
@@ -336,15 +365,10 @@
                     _token: "{{ csrf_token() }}"
                 },
                 success(response) {
-
-                    // перерисовываем таблицу
                     dataTable.reload();
-
                 },
                 error(xhr) {
-
                     alert('Ошибка при изменении статуса');
-
                 },
                 complete() {
                     el.data('loading', false);

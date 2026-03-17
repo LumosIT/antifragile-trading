@@ -91,7 +91,7 @@
         .text-block-switch{
             position: absolute;
             left: 50%;
-            top: 50%;
+            top: 15%;
             transform: translate(-50%, -50%);
         }
         .text-block:first-child .text-block-switch{
@@ -104,59 +104,64 @@
 @endpush
 @push('scripts')
 
-    <template id="text-block">
-        <form action="{{ route('admin.api.posts.create') }}" method="post" autocomplete="off" class="text-block text-block-hidden">
-            <div class="text-block-controls">
-                <div class="text-block-delay input-group">
-                    <span class="input-group-text">
-                        <i class="ri ri-time-fill"></i>
-                    </span>
-                    <input type="text" class="js-int-mask form-control" placeholder="Задержка" name="delay" required>
-                    <span class="input-group-text">мин</span>
-                </div>
-                <button class="text-block-switch btn btn-primary-light" type="button">
-                    <i class="ri ri-arrow-up-down-fill fs-20"></i>
-                </button>
-                <button class="btn btn-primary text-block-add label-btn" type="button">
-                    <i class="ri-add-box-line label-btn-icon me-2"></i>
-                    Добавить пост
-                </button>
-                <a href="" class="text-block-remove btn btn-danger">
-                    <i class="ri ri-close-line fs-20"></i>
-                </a>
+<template id="text-block">
+    <form action="{{ route('admin.api.posts.create') }}" method="post" autocomplete="off" class="text-block text-block-hidden">
+        <div class="text-block-controls d-flex flex-wrap align-items-center gap-2">
+            <div class="text-block-delay input-group flex-grow-1 flex-md-grow-0" style="min-width: 150px;">
+                <span class="input-group-text">
+                    <i class="ri ri-time-fill"></i>
+                </span>
+                <input type="text" class="js-int-mask form-control" placeholder="Задержка" name="delay" required>
+                <span class="input-group-text">мин</span>
             </div>
-            <div class="card shadow mb-0 text-card">
-                <div class="card-header d-block">
-                    <p class="card-title">Блок <span class="text-block-index"></span></p>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-9">
-                            <div class="form-group">
-                                <textarea name="value" id="" cols="30" rows="10" class="form-control"></textarea>
-                            </div>
+
+            <button class="text-block-switch btn btn-primary-light" type="button">
+                <i class="ri ri-arrow-up-down-fill fs-20"></i>
+            </button>
+
+            <button class="btn btn-primary text-block-add label-btn" type="button">
+                <i class="ri-add-box-line label-btn-icon me-2"></i>
+                Добавить пост
+            </button>
+
+            <a href="" class="text-block-remove btn btn-danger">
+                <i class="ri ri-close-line fs-20"></i>
+            </a>
+        </div>
+
+        <div class="card shadow mb-3 text-card">
+            <div class="card-header d-block">
+                <p class="card-title">Блок <span class="text-block-index"></span></p>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12 col-md-9">
+                        <div class="form-group">
+                            <textarea name="value" class="form-control" rows="10"></textarea>
                         </div>
-                        <div class="col-3">
-                            @include('components.forms.telegram-file-picker', [
-                                   'placeholder' => 'Выбрать файл',
-                                   'name' => 'file_id',
-                                   'accept' => '.jpeg,.jpg,.png,.mp4,.doc,.txt,.xls,.ppt,.pptx,.docx,.xlsx',
-                                   'no_initiate' => true
-                               ])
-                                <button type="submit" class="btn btn-success label-btn mt-2" style="position: absolute;bottom: 16px;right: 17px;">
-                                    <i class="ri-save-2-fill label-btn-icon me-2"></i>
-                                    <span class="label-btn-icon" style="display: none">
+                    </div>
+                    <div class="col-12 col-md-3 d-flex flex-column">
+                        @include('components.forms.telegram-file-picker', [
+                               'placeholder' => 'Выбрать файл',
+                               'name' => 'file_id',
+                               'accept' => '.jpeg,.jpg,.png,.mp4,.doc,.txt,.xls,.ppt,.pptx,.docx,.xlsx',
+                               'no_initiate' => true
+                           ])
+                        <button type="submit" class="btn btn-success label-btn mt-2 align-self-end">
+                            <i class="ri-save-2-fill label-btn-icon me-2"></i>
+                            <span class="label-btn-icon" style="display: none">
                                 <span class="spinner-border spinner-border-sm align-middle"></span>
                             </span>
-                                    Сохранить
-                                </button>
-                        </div>
+                            Сохранить
+                        </button>
                     </div>
                 </div>
             </div>
-            <input type="hidden" name="type" value="{{ $type }}">
-        </form>
-    </template>
+        </div>
+
+        <input type="hidden" name="type" value="{{ $type }}">
+    </form>
+</template>
 
     <script>
 

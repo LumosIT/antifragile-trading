@@ -200,30 +200,28 @@ function jsAjaxForm(form, afterSave, beforeRequest = null){
 }
 
 function htmlTemplateDate(date){
-
     let m = moment(date);
 
     return `
-                                <div>
-                                   <a href="javascript:void(0);" class="fw-medium">${m.format('HH:mm')}</a>
-                                   <span class="d-block text-muted fs-10">${moment().diff('days', m) > 2 ? m.format('DD.MM.yyyy') : m.fromNow()}</span>
-                                </div>`
-
+        <div>
+            <a href="javascript:void(0);" class="fw-medium">${m.format('HH:mm')}</a>
+            <span class="d-block text-muted fs-10">${moment().diff('days', m) > 2 ? m.format('DD.MM.yyyy') : m.fromNow()}</span>
+        </div>`
 }
 
 function htmlTemplateUser(name, hint = null, url = '#', picture = ''){
 
     return `<div class="d-flex align-items-center gap-2">
-                                                                <div class="lh-1">
-                                                                    <span class="avatar avatar-sm avatar-rounded">
-                                                                        <img src="${picture || '/assets/images/ecommerce/jpg/2.jpg'}" alt="">
-                                                                    </span>
-                                                                </div>
-                                                                <div>
-                                                                    <a href="${ url }" class="d-block fw-medium">${ htmlize(name) }</a>
-                                                                    ${ hint ? `<span class="fs-12 text-muted">${ htmlize(hint) }</span>` : ``}
-                                                                </div>
-                                                            </div>`;
+                <div class="lh-1">
+                    <span class="avatar avatar-sm avatar-rounded">
+                        <img src="${picture || '/assets/images/ecommerce/jpg/2.jpg'}" alt="">
+                    </span>
+                </div>
+                <div>
+                    <a href="${ url }" class="d-block fw-medium">${ htmlize(name) }</a>
+                    ${ hint ? `<span class="fs-12 text-muted">${ htmlize(hint) }</span>` : ``}
+                </div>
+            </div>`;
 
 }
 

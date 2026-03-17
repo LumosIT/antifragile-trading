@@ -16,6 +16,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ScheduleCheckExpiredSubscriptions implements ShouldQueue
@@ -71,8 +72,7 @@ class ScheduleCheckExpiredSubscriptions implements ShouldQueue
 
         foreach($users as $user){
 
-            \DB::transaction(function () use ($subscriptions, $user){
-
+            DB::transaction(function () use ($subscriptions, $user){
                 $user->tariff_id = null;
                 $user->tariff_expired_at = null;
                 $user->save();
@@ -82,7 +82,6 @@ class ScheduleCheckExpiredSubscriptions implements ShouldQueue
                 }
 
                 KickFromChannels::dispatch($user)->onQueue('telegram');
-
             });
 
         }

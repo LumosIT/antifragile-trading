@@ -209,17 +209,11 @@ class CloudPaymentsController extends Controller
                 $user->first_payment_at = now();
             }
 
-            if(
-                !$user->tariff_id ||
-                $user->tariff->mode !== $tariff->mode
-            ){
-                $user->spam_stage = 0;
+            if(!$user->tariff_id ||$user->tariff->mode !== $tariff->mode){
                 $user->last_spam_at = null;
             }
 
             $user->save();
-
-
             $order->status = OrderStatuses::SUCCESS;
             $order->save();
 

@@ -19,23 +19,36 @@ class SendCancelReminder implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected $user;
+    protected $days;
 
-
-    public function __construct(User $user)
+    public function __construct(User $user, $days)
     {
         $this->user = $user;
+        $this->days = $days;
     }
-
 
 
     public function handle(TelegramBaseService $telegramBaseService, MaxBaseService $maxBaseService)
     {
-        try {
-            $telegramBaseService->sendCancelReminder($this->user);
-        } catch (\Throwable $exception) {}
+        if($this->days == 3) {
+            try {
+                $telegramBaseService->sendCancelReminder($this->user);
+            } catch (\Throwable $exception) {}
 
-        try {
-            $maxBaseService->sendCancelReminder($this->user);
-        } catch (\Throwable $exception) {}
+            try {
+                $maxBaseService->sendCancelReminder($this->user);
+            } catch (\Throwable $exception) {}
+        }
+
+        if($this->days == 1) {
+            try {
+                $telegramBaseService->sendCancelReminderOneDay($this->user);
+            } catch (\Throwable $exception) {}
+
+            try {
+                $maxBaseService->sendCancelReminderOneDay($this->user);
+            } catch (\Throwable $exception) {}
+        }
+
     }
 }

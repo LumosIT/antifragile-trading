@@ -4,7 +4,6 @@
 
 @section('title', $title)
 
-
 @section('content')
 
     @include('components.other.breadcrumbs', [
@@ -82,6 +81,7 @@
                         </div>
                     </div>
                 </div>
+
                 <div class="row">
                     <div class="col-3">
                         <div class="form-group mb-4">
@@ -131,11 +131,32 @@
 
                 <div class="row">
                     <div class="col-3">
+                        <label class="form-label">Тип платформы</label>
                         <select class="form-control" name="type" id="type">
                             <option value="all" selected>Все платформы</option>
                             <option value="telegram">Telegram</option>
                             <option value="max">MAX</option>
                         </select>
+                    </div>
+
+                    <div class="col-3">
+                        <label class="form-label">Запуск рассылки</label>
+                        <select class="form-control" name="start_type" id="start_type">
+                            <option value="now" selected>Запустить сейчас</option>
+                            <option value="delayed">Отложенный запуск</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mt-3 d-none" id="delayed_block">
+                    <div class="col-3">
+                        <label class="form-label">Текущее время сервера</label>
+                        <input type="text" class="form-control" id="server_time" value="{{ now() }}" disabled>
+                    </div>
+
+                    <div class="col-3">
+                        <label class="form-label">Время запуска</label>
+                        <input type="datetime-local" class="form-control" name="start_at">
                     </div>
                 </div>
             </div>
@@ -156,19 +177,41 @@
 @endsection
 @push('scripts')
     <script>
+        let serverTime = new Date("{{ now()->format('Y-m-d H:i:s') }}".replace(' ', 'T'));
+
+        function updateServerTime() {
+
+            serverTime.setSeconds(serverTime.getSeconds() + 1);
+
+            let y = serverTime.getFullYear();
+            let m = String(serverTime.getMonth() + 1).padStart(2, '0');
+            let d = String(serverTime.getDate()).padStart(2, '0');
+
+            let h = String(serverTime.getHours()).padStart(2, '0');
+            let i = String(serverTime.getMinutes()).padStart(2, '0');
+            let s = String(serverTime.getSeconds()).padStart(2, '0');
+
+            $("#server_time").val(`${y}-${m}-${d} ${h}:${i}:${s}`);
+        }
+
+        setInterval(updateServerTime, 1000);
+
+        $("#start_type").on("change", function () {
+            if ($(this).val() === "delayed") {
+                $("#delayed_block").removeClass("d-none");
+            } else {
+                $("#delayed_block").addClass("d-none");
+            }
+        });
 
         jsAjaxForm($("#my_form"), (json) => {
-
             successNotification('Рассылка создана!');
-
             setTimeout(() => {
                 location.href = "{{ route('admin.mailing') }}";
             }, 500);
-
         });
 
         $(window).on('load', () => {
-
             $("#mail_textarea").summernote({
                 toolbar: [
                     ['style', ['bold', 'italic', 'underline', 'clear']],
@@ -190,9 +233,7 @@
                 disableDragAndDrop: true,
                 shortcuts: false
             });
-
         });
-
 
     </script>
 @endpush

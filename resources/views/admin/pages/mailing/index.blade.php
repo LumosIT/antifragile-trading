@@ -117,15 +117,28 @@
 
                     }
                 },
-
                 {
                     name : 'Текст',
                     code : 'text',
                     sortable: true,
+                    width: 300,
                     data(row){
 
-                        return `<pre class="bg-gray-100 p-2 rounded-3" style="word-break: break-all;white-space: break-spaces;">` + row.text + `</pre>`;
-
+                        return `
+                            <div style="
+                                max-width: 300px;
+                                max-height: 120px;
+                                overflow: auto;
+                                white-space: pre-wrap;
+                                word-break: break-word;
+                                background: #f3f3f3;
+                                padding: 8px;
+                                border-radius: 8px;
+                                font-size: 12px;
+                            ">
+                                ${row.text}
+                            </div>
+                        `;
                     }
                 },
                 {
@@ -204,7 +217,6 @@
                 }
             ]
         });
-
 
         initDatatableRemoveButton(dataTable, '.js-stop-datatable-button', 'Остановить рассылку?');
         initDatatableRemoveButton(dataTable, '.js-play-datatable-button', 'Продолжить рассылку?');

@@ -9,17 +9,17 @@
 @section('title', $title)
 
 @php($modes = [
-                                          \App\Consts\TariffModes::SIMPLE => '2 ступень',
-                                          \App\Consts\TariffModes::FULL => '2 и 3 ступень'
-                                      ])
+    \App\Consts\TariffModes::SIMPLE => '2 ступень',
+    \App\Consts\TariffModes::FULL => '2 и 3 ступень'
+])
 
 @php($periods = [
-                                    \App\Consts\TariffPeriods::DAY => 'дн.',
-                                    \App\Consts\TariffPeriods::WEEK => 'нед.',
-                                    \App\Consts\TariffPeriods::MONTH => 'мес.',
-                                    \App\Consts\TariffPeriods::YEAR => 'г.',
+    \App\Consts\TariffPeriods::DAY => 'дн.',
+    \App\Consts\TariffPeriods::WEEK => 'нед.',
+    \App\Consts\TariffPeriods::MONTH => 'мес.',
+    \App\Consts\TariffPeriods::YEAR => 'г.',
 
-                                ])
+])
 
 @section('content')
 
@@ -32,7 +32,7 @@
     ])
 
     <div class="row">
-        <div class="col-6">
+        <div class="col-md-12 col-lg-8">
             <form id="my_form" action="{{ isset($tariff) ? route('admin.api.tariffs.edit', $tariff->id) : route('admin.api.tariffs.create') }}" class="card" method="post" autocomplete="off">
                 <div class="card-header justify-content-between">
                     <div class="card-title">

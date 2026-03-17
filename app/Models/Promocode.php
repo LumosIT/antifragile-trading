@@ -4,12 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Promocode extends Model
 {
-
     use SoftDeletes;
 
     protected $fillable = [
@@ -56,6 +54,4 @@ class Promocode extends Model
         return $this->current_uses <= $this->max_uses &&
             (!$this->expired_at || $this->expired_at > now());
     }
-
-
 }

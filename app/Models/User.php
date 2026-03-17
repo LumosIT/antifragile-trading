@@ -58,7 +58,9 @@ class User extends Authenticatable
         'offer_ready',
         'invite_in_test',
         'max_chat',
-        'synchronization_token'
+        'synchronization_token',
+        'name_2',
+        'username_2'
     ];
 
     protected $attributes = [

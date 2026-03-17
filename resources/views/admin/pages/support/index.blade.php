@@ -66,12 +66,11 @@
 @endsection
 
 @section('content')
-
     <div class="page-wrapper">
         <div class="container-fluid">
             <div class="card">
                 <div class="row no-gutters">
-                    <div class="col-lg-4 col-xl-3 border-right" style="max-height: 770px; padding-right:0">
+                    <div class="col-lg-4 col-xl-3 border-right" style="max-height: 770px;">
                         <div class="card-body border-bottom" style="border-right: 1px solid var(--default-border) !important;">
                             <input class="form-control" id="search" type="text" placeholder="Поиск">
                         </div>
@@ -80,8 +79,9 @@
                     </div>
                     <div class="col-lg-8 col-xl-9" style="max-height: 770px; padding-left: 0;">
                         <div class="chat-box scrollable position-relative ps-container ps-theme-default">
+                            <hr style="background: #8274ff">
                             <ul class="chat-list px-3 pt-3"
-                                style="height: 599px; max-height: 599px; overflow: auto; list-style: none"
+                                style="height: 599px; max-height: 599px; overflow: auto; list-style: none;"
                                 id="block-messages">
                                 <li>Выберите диалог</li>
                             </ul>
@@ -315,32 +315,47 @@
                         messagesBlock.empty();
 
                         dialogs.forEach(dialog => {
+                            let profileName
+
+                            if(dialog.username == '' || dialog.username == null || dialog.username == 'отсутсвует') {
+                                profileName = 'Клиент'
+                            } else {
+                                profileName = dialog.username;
+                            }
+
                             let imageUrl = dialog.image == null ? "{{ asset('/storage/avatar.png') }}" : dialog.image;
                             const activeClass = (currentDialog == dialog.id) ? 'active' : '';
 
                             const dialogHtml = `
-                        <span class="message-item d-flex align-items-center border-bottom px-3 py-2  download-messages ${activeClass}"
-                           data-dialog-id="${dialog.id}" data-client-id="${dialog.client_id}">
-                            <div class="user-img mr-1">
-                                <img src="${imageUrl}" alt="avatar" class="rounded-circle current-avatar" width="40">
-                                <span class="profile-status online float-right"></span>
-                            </div>
-                            <div class="w-75 d-inline-block v-middle" style="padding-left:10px;">
-                                <p class="message-title mb-0 mt-1"><b>${dialog.username ?? 'no username'}</b></p>
-                                <span class="font-12 text-nowrap d-block text-dark text-truncate">
-                                    ${dialog.last_message ?? 'Нет сообщений'}
+                                <span class="message-item d-flex align-items-center border-bottom px-3 py-2 download-messages ${activeClass}"
+                                    data-dialog-id="${dialog.id}" data-client-id="${dialog.client_id}">
+                                    <div class="user-img mr-1">
+                                        <img src="${imageUrl}" alt="avatar" class="rounded-circle current-avatar" width="40">
+                                        <span class="profile-status online float-right"></span>
+                                    </div>
+                                    <div class="w-75 d-inline-block v-middle" style="padding-left:10px;">
+                                        <p class="message-title mb-0 mt-1">
+                                            <u>
+                                                <a href="/admin/users/edit/${dialog.client_id}" target="_blank" style="color:inherit; text-decoration:none;">
+                                                    ${profileName}
+                                                </a>
+                                            </u>
+                                        </p>
+                                        <span class="font-12 text-nowrap d-block text-dark text-truncate mt-2 mb-2">
+                                            ${dialog.last_message ?? 'Нет сообщений'}
+                                        </span>
+                                        <span class="text-nowrap d-block text-muted" style="font-size: 0.6rem">
+                                            ${dialog.created_at ?? ''}
+                                        </span>
+                                    </div>
+                                    ${dialog.unread_count > 0 ? `
+                                        <div class="ml-auto">
+                                            <span class="badge" style="background:red">${dialog.unread_count}</span>
+                                        </div>
+                                    ` : ''}
                                 </span>
-                                <span class="text-nowrap d-block text-muted" style="font-size: 0.6rem">
-                                    ${dialog.created_at ?? ''}
-                                </span>
-                            </div>
-                            ${dialog.unread_count > 0 ? `
-                                <div class="ml-auto">
-                                    <span class="badge" style="background:red">${dialog.unread_count}</span>
-                                </div>
-                            ` : ''}
-                        </span>
-                    `;
+                            `;
+
                             messagesBlock.append(dialogHtml);
                         });
                     }

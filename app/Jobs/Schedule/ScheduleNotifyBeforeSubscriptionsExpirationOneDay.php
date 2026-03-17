@@ -15,7 +15,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-class ScheduleNotifyBeforeSubscriptionsExpiration implements ShouldQueue
+class ScheduleNotifyBeforeSubscriptionsExpirationOneDay implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -26,7 +26,7 @@ class ScheduleNotifyBeforeSubscriptionsExpiration implements ShouldQueue
 
     protected function getDaysBefore(): int
     {
-        return 3;
+        return 1;
     }
 
     public function handle()
@@ -47,16 +47,12 @@ class ScheduleNotifyBeforeSubscriptionsExpiration implements ShouldQueue
             ->lazyById(10);
 
         foreach($users as $user) {
+            if(!$user->activeSubscription) {
+                SendCancelReminder::dispatch($user, 1)->onQueue('default');
 
-            $user->subscription_notify_at = now();
-            $user->save();
-
-            if($user->activeSubscription) {
-                SendPaymentReminder::dispatch($user, 3)->onQueue('telegram');
-            } else {
-                SendCancelReminder::dispatch($user, 3)->onQueue('telegram');
+                $user->subscription_notify_at = now();
+                $user->save();
             }
-
         }
     }
 

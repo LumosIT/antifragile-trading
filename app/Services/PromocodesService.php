@@ -51,14 +51,13 @@ class PromocodesService
      */
     public function use(Promocode $promocode) : void
     {
-
         $rows = Promocode::query()
             ->where('id', $promocode->id)
             ->whereColumn('current_uses', '<', 'max_uses')
             ->where('expired_at', '>', now())
             ->increment('current_uses');
 
-        if(!$rows){
+        if(!$rows) {
             throw new PromocodeNotAvailableException($promocode);
         }
 

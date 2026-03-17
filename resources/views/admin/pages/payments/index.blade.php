@@ -11,20 +11,35 @@
             </div>
         </div>
         <div class="card-body p-0">
-            <form action="" method="post" autocomplete="off" class="d-flex align-items-center justify-content-between p-3" onsubmit="return false">
-                <input class="form-control me-2" id="datatable_search" placeholder="Поиск..." style="width:200px">
-                <div class="d-flex align-items-center justify-content-end">
+            <form action="" method="post" autocomplete="off"
+                class="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-between gap-2 p-3"
+                onsubmit="return false">
+
+                {{-- Поиск --}}
+                <input class="form-control w-100 w-lg-auto"
+                    id="datatable_search"
+                    placeholder="Поиск...">
+
+                {{-- Правая часть --}}
+                <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2 w-100 w-lg-auto">
+
                     <div class="input-group">
                         <div class="input-group-text">
                             <i class="ri-calendar-2-line"></i>
                         </div>
-                        <input type="text" class="form-control me-2" id="filter_date" placeholder="Date range picker" style="width: 200px;">
+                        <input type="text"
+                            class="form-control"
+                            id="filter_date"
+                            placeholder="Date range picker">
                     </div>
+
                     <button class="btn btn-white flex-shrink-0 datatable_filters_button" type="button">
                         <i class="ri-filter-3-line"></i>
-                        Фильтра
+                        Фильтр
                     </button>
+
                 </div>
+
             </form>
             <div class="table-responsive">
                 <table class="table table-hover" id="datatable_custom">
@@ -93,9 +108,7 @@
                     code : 'created_at',
                     sortable : true,
                     data(row){
-
                         return htmlTemplateDate(row.created_at);
-
                     }
                 }
             ]

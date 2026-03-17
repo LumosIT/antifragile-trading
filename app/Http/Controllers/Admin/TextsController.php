@@ -24,7 +24,6 @@ class TextsController extends Controller
 
     public function edit(Request $request, Text $text) : void
     {
-
         $data = $request->validate([
             'value' => ['nullable', 'string'],
         ]);
@@ -37,7 +36,6 @@ class TextsController extends Controller
         }
 
         $this->textsService->set($text->id, $value);
-
     }
 
     public function editHint(Request $request, Text $text) : void

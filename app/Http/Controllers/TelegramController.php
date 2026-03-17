@@ -182,9 +182,7 @@ class TelegramController extends Controller
                 $user->last_activity_at = now();
                 $user->is_alive = true;
                 $user->died_at = null;
-                $user->type = 'telegram';
                 $user->save();
-
             }
 
             return $user;

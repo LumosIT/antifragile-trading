@@ -642,6 +642,7 @@ function initVueApp(startStep = 1, user, data) {
             <h1 class="text-center">Поддержка</h1>
             <p>Если у вас возникли вопросы, пожалуйста, свяжитесь с нашей поддержкой:</p>
             <a href="https://t.me/club257_supportbot" target="_blank">Телеграм-бот поддержки</a>
+            <a href="https://max.ru/id745115760361_2_bot" target="_blank">MAX-бот поддержки</a>
         </div>
         `
     });

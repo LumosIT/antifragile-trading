@@ -95,9 +95,10 @@ Route::as('.')->group(function(){
             Route::post('/invite-third-stair/{user}', [UsersController::class, 'inviteThirdStair'])->name('invite-third-stair');
             Route::post('/invite-third-stair-testing/{user}', [UsersController::class, 'inviteThirdStairTesting'])->name('invite-third-stair-testing');
             Route::post('/send-offer/{user}', [UsersController::class, 'sendOffer'])->name('send-offer');
+            Route::post('/{user}/offers', [UsersController::class, 'offers'])->name('offers');
+            Route::post('/remove-offer', [UsersController::class, 'removeOffer'])->name('removeOffer');
             Route::post('/kick/{user}', [UsersController::class, 'kick'])->name('kick');
             Route::post('/remove/{user}', [UsersController::class, 'remove'])->name('remove');
-
         });
 
         /**

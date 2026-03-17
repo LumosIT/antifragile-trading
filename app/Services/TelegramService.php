@@ -26,11 +26,11 @@ class TelegramService
         $this->bot->setCurlOption(CURLOPT_CONNECTTIMEOUT, 60);
     }
 
-    public function send(User $user, string $message, $markup = null, ?string $mid = null) : Message
+    public function send(User $user, string $message, $markup = null, ?string $mid = null): Message
     {
         if($mid) {
             return $this->bot->editMessageText($user->chat, $mid, $message, 'HTML', true, $markup);
-        }else{
+        } else {
             return $this->bot->sendMessage($user->chat, $message, 'HTML', true, null, $markup);
         }
     }
