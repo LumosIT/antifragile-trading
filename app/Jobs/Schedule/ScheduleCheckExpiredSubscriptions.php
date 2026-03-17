@@ -70,8 +70,7 @@ class ScheduleCheckExpiredSubscriptions implements ShouldQueue
             ->with('tariff')
             ->lazyById(10);
 
-        foreach($users as $user){
-
+        foreach($users as $user) {
             DB::transaction(function () use ($subscriptions, $user){
                 $user->tariff_id = null;
                 $user->tariff_expired_at = null;
@@ -83,9 +82,6 @@ class ScheduleCheckExpiredSubscriptions implements ShouldQueue
 
                 KickFromChannels::dispatch($user)->onQueue('telegram');
             });
-
         }
-
-
     }
 }

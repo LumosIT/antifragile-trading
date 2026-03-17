@@ -17,6 +17,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use PhpParser\Node\Expr\Throw_;
+use Throwable;
 
 class FilesController extends Controller
 {
@@ -71,7 +73,6 @@ class FilesController extends Controller
     public function get(Request $request, File $file)
     {
         header('Content-Type', 'application/octet-stream');
-
         return $this->telegramService->getFile($file->hash);
     }
 

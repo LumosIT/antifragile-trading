@@ -208,13 +208,9 @@ Route::as('.')->group(function(){
          * Файлы
          */
         Route::prefix('/files')->as('files.')->group(function(){
-
             Route::post('/upload', [FilesController::class, 'upload'])->name('upload');
             Route::get('/get/{file}', [FilesController::class, 'get'])->name('get');
-
         });
-
-
     });
 });
 

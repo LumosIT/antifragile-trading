@@ -69,16 +69,11 @@ class PromocodesService
     }
 
 
-    public function getBonusSeconds(Promocode $promocode) : int
+    public function getBonusSeconds(Promocode $promocode): int
     {
-        if(!$promocode->bonus_period || $promocode->bonus_duration){
-            return 0;
-        }
-
         $now = now();
 
-        switch($promocode->bonus_period){
-
+        switch($promocode->bonus_period) {
             case TariffPeriods::DAY:
                 $end = $now->clone()->addDays($promocode->bonus_duration);
                 break;
@@ -97,13 +92,11 @@ class PromocodesService
 
             default:
                 throw new \Exception('Unknown bonus period');
-
         }
 
         return $now->diffInSeconds(
             $end
         );
-
     }
 
 }

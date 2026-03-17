@@ -19,24 +19,29 @@ class KickFromChannels implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected $user;
+    protected $sendMessage;
 
-
-    public function __construct(User $user)
+    public function __construct(User $user, $sendMessage = true)
     {
         $this->user = $user;
+        $this->sendMessage = $sendMessage;
     }
 
     public function handle(TelegramBaseService $telegramBaseService, MaxBaseService $maxBaseService)
     {
         try {
             $telegramBaseService->kickFromAllChannels($this->user);
-            $telegramBaseService->sendKickMessage($this->user);
+            if($this->sendMessage) {
+                $telegramBaseService->sendKickMessage($this->user);
+            }
         } catch (\Throwable $exception) {}
 
         try {
             $maxBaseService->kickUserFromChannel($this->user, '-70931186387659');
             $maxBaseService->kickUserFromChannel($this->user, '-71321808014027');
-            $maxBaseService->sendKickMessage($this->user);
+            if($this->sendMessage) {
+                $maxBaseService->sendKickMessage($this->user);
+            }
         } catch (\Throwable $exception) {}
     }
 }

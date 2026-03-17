@@ -55,7 +55,7 @@ class CloudPaymentsController extends Controller
     /**
      * Создание платежа
      */
-    protected function createPayment(User $user, Subscription $subscription, int $amount, string $transaction_id) : Payment
+    protected function createPayment(User $user, Subscription $subscription, int $amount, string $transaction_id): Payment
     {
         return Payment::create([
             'amount' => $amount,
@@ -74,9 +74,8 @@ class CloudPaymentsController extends Controller
         Tariff $current_tariff,
         Tariff $next_tariff,
         Carbon $expiration_time
-    ) : float
+    ): float
     {
-
         $current_tariff_duration = $this->tariffsService->getDurationSeconds($current_tariff);
         $current_tariff_rest = $expiration_time->getTimestamp() - now()->getTimestamp();
         $current_tariff_rest_percent = $current_tariff_rest / $current_tariff_duration;
@@ -86,7 +85,6 @@ class CloudPaymentsController extends Controller
         $next_tariff_bonus = $this->tariffsService->getDurationSeconds($next_tariff) * $next_tariff_percent;
 
         return $next_tariff_bonus;
-
     }
 
     /**
@@ -97,10 +95,9 @@ class CloudPaymentsController extends Controller
         Subscription $subscription,
         string $transaction_id,
         int $amount
-    ) : void{
+    ): void{
 
         DB::transaction(function() use ($subscription, $amount, $transaction_id, $user){
-
             /**
              * Создаем платеж
              */
@@ -115,7 +112,6 @@ class CloudPaymentsController extends Controller
              * Пишем общую статистику
              */
             $this->statisticService->onContinueSubscription($subscription, $payment);
-
         });
 
     }
@@ -127,7 +123,7 @@ class CloudPaymentsController extends Controller
         string $token,
         string $transaction_id,
         string $card
-    ) : void {
+    ): void {
 
         /**
          * Сумма подписки: по цене тарифа или по цене оплаты (с учетом скидок)
@@ -346,7 +342,7 @@ class CloudPaymentsController extends Controller
                     throw new \Exception('Wrong subscription id');
                 }
 
-                if(!$user->activeSubscription || $user->activeSubscription->id !== $subscription->id){
+                if(!$user->activeSubscription || $user->activeSubscription->id !== $subscription->id) {
                     throw new \Exception('No active subscription');
                 }
 
@@ -354,7 +350,7 @@ class CloudPaymentsController extends Controller
             } else {
                 $order = $this->getOrderFromData($data);
 
-                if(!$order || $order->user_id !== $user->id || $order->status !== OrderStatuses::ACTIVE){
+                if(!$order || $order->user_id !== $user->id || $order->status !== OrderStatuses::ACTIVE) {
                     throw new \Exception('Wrong order id');
                 }
 

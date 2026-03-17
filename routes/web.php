@@ -4,11 +4,20 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\ViewsController;
 use Illuminate\Support\Facades\Route;
 use App\Consts\Permissions;
+use App\Jobs\Fix;
+use App\Jobs\Telegram\KickFromChannels;
+use App\Jobs\Telegram\SendSubscribeCancelation;
 use App\Models\Dialog;
 use App\Models\Offer;
+use App\Models\Post;
+use App\Models\Promocode;
 use App\Models\Text;
 use App\Models\User;
 use App\Services\MaxService;
+use App\Services\OptionsService;
+use App\Services\TelegramMailing\TelegramWelcomeService;
+use App\Services\TelegramService;
+use Illuminate\Support\Facades\DB;
 
 Route::get('/', function(){
     return redirect()->route('admin.profile');
@@ -169,5 +178,21 @@ Route::as('.')->group(function() {
 });
 
 Route::get('/test', function() {
-    dump(User::find(3324)->toArray());
+    dd(Promocode::find(30));
+    dd(User::where('id', 2226)->with(['orders'])->first()->toArray());
+    // $optionsService = app(OptionsService::class);
+    // $tgk = [-$optionsService->get('channel_second_stair_id'), -$optionsService->get('channel_third_stair_id'), -$optionsService->get('chat_second_stair_id')];
+
+    // $users = User::whereNull('tariff_id')->get();
+
+    // foreach($users as $user) {
+    //     foreach($tgk as $item) {
+    //         Fix::dispatch($item, $user->chat);
+    //     }
+    // }
+
+    // $telegramService = app(TelegramWelcomeService::class);
+    // $user = User::find(3325);
+    // $post = Post::where('value', 'like', '%Как работать с каналом Клуба и навигацией%')->first();
+    // $telegramService->sendSpamBlock($user, $post);
 });

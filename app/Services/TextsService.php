@@ -90,15 +90,13 @@ class TextsService
      */
     public function normalize(string $text) : string
     {
-
         $str = $this->stripEmptyTags($text);
         $str = str_replace("</p>", "</p>\n", $str);
         $str = str_replace("</div>", "</div>\n", $str);
         $str = str_replace("&nbsp;", " ", $str);
-        $str = strip_tags($str, '<a><b><s><u><i>');
+        $str = strip_tags($str, '<a><b><s><u><i><br>');
 
         return $str;
-
     }
 
     /**

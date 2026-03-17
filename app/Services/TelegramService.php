@@ -31,6 +31,7 @@ class TelegramService
         if($mid) {
             return $this->bot->editMessageText($user->chat, $mid, $message, 'HTML', true, $markup);
         } else {
+            $message = str_replace('<br>', "\n", $message);
             return $this->bot->sendMessage($user->chat, $message, 'HTML', true, null, $markup);
         }
     }
@@ -95,24 +96,18 @@ class TelegramService
 
     public function checkIsChannelMember(string $channel_id, User $user) : bool
     {
-
         try {
-
             $check = $this->bot->getChatMember(
                 $channel_id,
                 $user->chat
             );
 
             $check = $check->getStatus() === 'member' || $check->getStatus() === 'administrator' || $check->getStatus() === 'creator';
-
-        }catch (\Throwable $e){
-
+        } catch (\Throwable $e) {
             $check = false;
-
         }
 
         return $check;
-
     }
 
     public function showAlert(string $callback_id, string $text, bool $quietly = false) : bool
@@ -142,24 +137,21 @@ class TelegramService
 
     public function getInviteLink(string $argument) : string
     {
-
         $username = $this->bot->getMe()->getUsername();
 
         return 'https://t.me/' . $username . '?start=' . $argument;
-
     }
 
-    public function getFile(string $id) : string
+    public function getFile(string $id)
     {
         return $this->bot->downloadFile($id);
     }
 
     public function getAvatar(User $user) : ?string
     {
-
         $photos = $this->bot->getUserProfilePhotos($user->chat);
 
-        if($photos->getTotalCount()){
+        if($photos->getTotalCount()) {
 
             $photos = $photos->getPhotos();
             $photos = $photos[0];
@@ -179,7 +171,6 @@ class TelegramService
         }
 
         return null;
-
     }
 
     public function createChannelLink(int $channel_id) : string

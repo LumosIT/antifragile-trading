@@ -79,6 +79,8 @@
                     data(row){
 
                         let colors = {
+                            "{{ \App\Consts\UserStages::ADMIN }}" : 'success',
+                            "{{ \App\Consts\UserStages::COMPLETE_PRE_FORM }}" : 'primary',
                             "{{ \App\Consts\UserStages::NOT_START }}" : 'gray-500',
                             "{{ \App\Consts\UserStages::CANCEL_THIRD_PART }}" : 'danger-transparent',
                             "{{ \App\Consts\UserStages::CANCEL_SECOND_PART }}" : 'danger-transparent',
