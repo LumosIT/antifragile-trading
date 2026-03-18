@@ -3,6 +3,7 @@
 namespace App\Services\MaxMailing;
 
 use App\Consts\FileTypes;
+use App\Models\Action;
 use App\Models\Order;
 use App\Models\Post;
 use App\Models\Tariff;
@@ -320,12 +321,6 @@ class MaxBaseService
                 if($user->last_activity_at->format('d.m.Y') !== now()->format('d.m.Y')) {
                     $this->statisticService->onActivity($user);
                 }
-
-                if($support) {
-                    $user->max_support_chat = $this->max_chat;
-                } else {
-                    $user->max_chat = $this->max_chat;
-                }
                 
                 $user->last_activity_at = now();
                 $user->is_alive = true;
@@ -471,6 +466,8 @@ class MaxBaseService
 
     public function sendInviteToChannel(User $user, ?Order $order = null)
     {
+        Action::register($user->id, 'Получил приглашение', 'Вторая ступень');
+
         if(ctype_digit($user->chat)) {
             $telegramService = app(TelegramService::class);
             $channel = -$this->optionsService->get('channel_second_stair_id');
@@ -511,6 +508,8 @@ class MaxBaseService
 
     public function sendInviteToThirdStep(User $user, ?Order $order = null)
     {
+        Action::register($user->id, 'Получил приглашение', 'Третья ступень');
+        
         $url = 'https://max.ru/join/sFwWugTWaBpq9Xe3yUzf0ZfoJftBuJpeq6BGZBzQkxA';
 
         return $this->maxService->sendMessage(

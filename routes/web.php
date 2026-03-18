@@ -4,20 +4,8 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\ViewsController;
 use Illuminate\Support\Facades\Route;
 use App\Consts\Permissions;
-use App\Jobs\Fix;
-use App\Jobs\Telegram\KickFromChannels;
-use App\Jobs\Telegram\SendSubscribeCancelation;
-use App\Models\Dialog;
-use App\Models\Offer;
-use App\Models\Post;
-use App\Models\Promocode;
-use App\Models\Text;
-use App\Models\User;
-use App\Services\MaxService;
-use App\Services\OptionsService;
-use App\Services\TelegramMailing\TelegramWelcomeService;
-use App\Services\TelegramService;
-use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Admin\ActionsController;
+use App\Models\Action;
 
 Route::get('/', function(){
     return redirect()->route('admin.profile');
@@ -30,6 +18,11 @@ Route::as('.')->group(function() {
     });
 
     Route::middleware('auth:admin')->group(function () {
+        /**
+         * События в MAX
+         */
+        Route::get('/actions', [ActionsController::class, 'index'])->name('actions');
+        Route::get('/actions/data', [ActionsController::class, 'data'])->name('actions.data');
 
         /**
          * Профиль
@@ -178,8 +171,8 @@ Route::as('.')->group(function() {
 });
 
 Route::get('/test', function() {
-    dd(Promocode::find(30));
-    dd(User::where('id', 2226)->with(['orders'])->first()->toArray());
+    dd(Action::where('id', '>', 0)->with('client')->first());
+    // dd(User::where('id', 2226)->with(['orders'])->first()->toArray());
     // $optionsService = app(OptionsService::class);
     // $tgk = [-$optionsService->get('channel_second_stair_id'), -$optionsService->get('channel_third_stair_id'), -$optionsService->get('chat_second_stair_id')];
 

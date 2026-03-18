@@ -11,6 +11,7 @@ use App\Exceptions\Texts\DumpFileWrongDataException;
 use App\Exceptions\Texts\TextNotFoundException;
 use App\Models\Text;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class TextsService
 {
@@ -94,9 +95,12 @@ class TextsService
         $str = str_replace("</p>", "</p>\n", $str);
         $str = str_replace("</div>", "</div>\n", $str);
         $str = str_replace("&nbsp;", " ", $str);
-        $str = strip_tags($str, '<a><b><s><u><i><br>');
+        $str = preg_replace('/<br\s*\/?>/i', "\n", $str);
+        $str = strip_tags($str, '<a><b><s><u><i>');
+        $str = str_replace(["\r\n", "\r"], "\n", $str);
+        $str = preg_replace("/\n{3,}/", "\n\n", $str);
 
-        return $str;
+        return trim($str);
     }
 
     /**

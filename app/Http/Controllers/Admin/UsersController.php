@@ -62,7 +62,7 @@ class UsersController extends Controller
 
         $paginator = new ModernPerfectPaginator($users);
         $paginator->enabledDateFilter();
-        $paginator->setAllowedSearchColumns(['id', 'username', 'type', 'chat', 'email', 'fio', 'phone', 'name']);
+        $paginator->setAllowedSearchColumns(['id','name', 'username', 'name_2', 'username_2', 'type', 'chat', 'email', 'fio', 'phone']);
         $paginator->setSearchPreparator(function(string $search) {
             return ltrim($search, '@');
         });

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Action;
+use Illuminate\Support\Facades\Log;
 
 class MaxService
 {
@@ -30,17 +32,17 @@ class MaxService
             "update_types" => [
                 "message_callback",
                 "message_created",
-                // "message_edited",
-                // "bot_added",
-                // "bot_removed",
-                // "dialog_muted",
-                // "dialog_unmuted",
-                // "dialog_cleared",
-                // "user_added",
-                // "user_removed",
-                // "bot_stopped",
+                "message_edited",
+                "bot_added",
+                "bot_removed",
+                "dialog_muted",
+                "dialog_unmuted",
+                "dialog_cleared",
+                "user_added",
+                "user_removed",
+                "bot_stopped",
                 "bot_started",
-                // "chat_title_changed",
+                "chat_title_changed",
             ],
             "secret" => $secret
         ];
@@ -197,6 +199,8 @@ class MaxService
         $error = curl_error($ch);
 
         curl_close($ch);
+
+        Action::register($user->id, 'Был исключён ботом из канала', $chatId);
     }
 
     public function parseSubscribers():array

@@ -278,13 +278,8 @@ class TelegramController extends Controller
                 $status = $update['my_chat_member']['new_chat_member']['status'];
 
                 if (in_array($status, ['kicked', 'left'])) {
-
                     $user = $this->getOrCreateUser($chat);
-
-                    $user->is_alive = false;
-                    $user->died_at = now();
-                    $user->save();
-
+                    $user->die();
                 }
 
             }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Consts\SubscriptionStatuses;
+use App\Models\Action;
 use App\Models\Order;
 use App\Models\Tariff;
 use App\Models\User;
@@ -30,6 +31,7 @@ class MaxController extends Controller
             $data = $request->all();
             $headers = $request->headers->all();
 
+            Log::info($data);
             if($headers['x-max-bot-api-secret'][0] != config('max.secret_phrase')) {
                 return response()->json();
             }
@@ -37,9 +39,17 @@ class MaxController extends Controller
             $service = new MaxBaseService(config('max.token'));
             $service->parseMaxWebhook($data);
             $user = $service->getOrCreateUser();
-            
+
+            if(in_array($data['update_type'], ['message_created', 'bot_started'])) {
+                $service->handle($user, $request->input('payload'));
+            } else if($data['update_type'] == 'user_added') {
+                Action::register($user->id, 'Был добавлен в канал', $data['chat_id']);
+            } else if($data['update_type'] == 'user_removed') {
+                Action::register($user->id, 'Самостоятельно покинул канал', $data['chat_id']);
+            } else if($data['update_type'] == 'bot_stopped') {
+                $user->die();
+            }
             // $service->test($user);
-            $service->handle($user, $request->input('payload'));
         } catch(Throwable $e) {
             Log::alert('max webhook error', [
                 'message' => $e->getMessage(),

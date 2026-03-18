@@ -179,4 +179,10 @@ class User extends Authenticatable
     public function getTestStartetTime() {
         return $this->test_started_at;
     }
+
+    public function die() {
+        $this->is_alive = false;
+        $this->died_at = now();
+        $this->save();
+    }
 }

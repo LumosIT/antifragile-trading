@@ -33,6 +33,8 @@
     <!-- STEP 18 (PROFILE) -->
     <div v-if="isReady" v-cloak>
         <div v-if="step === 18">
+            <profile-block :max_chat="user.max_chat"></profile-block>
+
             <carousel></carousel>
 
             <completed-form
@@ -40,8 +42,6 @@
                 :form-link="formLink"
                 :following-enabled="following_enabled">
             </completed-form>
-
-            <profile-block :max_chat="user.max_chat"></profile-block>
 
             <test-form
                 :user="user"
