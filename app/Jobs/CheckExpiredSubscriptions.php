@@ -13,6 +13,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 
 class CheckExpiredSubscriptions implements ShouldQueue
 {
@@ -73,18 +74,15 @@ class CheckExpiredSubscriptions implements ShouldQueue
             ->lazyById(10);
 
         foreach($users as $user){
-
-            \DB::transaction(function () use ($subscriptions, $user){
-
+            DB::transaction(function () use ($subscriptions, $user){
                 $user->tariff_id = null;
+                $user->stage = 0;
                 $user->save();
 
                 SendSubscribeCancelation::dispatch($user)->onQueue('telegram');
                 KickFromChannels::dispatch($user)->onQueue('telegram');
             });
-
         }
-
 
     }
 }

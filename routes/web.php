@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Route;
 use App\Consts\Permissions;
 use App\Http\Controllers\Admin\ActionsController;
 use App\Models\Action;
+use App\Models\File;
+use App\Models\Option;
+use App\Models\User;
 
 Route::get('/', function(){
     return redirect()->route('admin.profile');
@@ -168,24 +171,4 @@ Route::as('.')->group(function() {
         Route::any('/logout', [AuthController::class, 'logout'])->name('logout');
 
     });
-});
-
-Route::get('/test', function() {
-    dd(Action::where('id', '>', 0)->with('client')->first());
-    // dd(User::where('id', 2226)->with(['orders'])->first()->toArray());
-    // $optionsService = app(OptionsService::class);
-    // $tgk = [-$optionsService->get('channel_second_stair_id'), -$optionsService->get('channel_third_stair_id'), -$optionsService->get('chat_second_stair_id')];
-
-    // $users = User::whereNull('tariff_id')->get();
-
-    // foreach($users as $user) {
-    //     foreach($tgk as $item) {
-    //         Fix::dispatch($item, $user->chat);
-    //     }
-    // }
-
-    // $telegramService = app(TelegramWelcomeService::class);
-    // $user = User::find(3325);
-    // $post = Post::where('value', 'like', '%Как работать с каналом Клуба и навигацией%')->first();
-    // $telegramService->sendSpamBlock($user, $post);
 });

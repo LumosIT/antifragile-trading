@@ -90,6 +90,11 @@ class FilesController extends Controller
         if ($type == 'photo') {
             $path = $file->store('uploads', 'public');
             $maxHash = 'https://petr-petr.ru' . Storage::url($path);
+        } else if($type == 'video') {
+            $path = $file->store('uploads', 'public');
+            $name = 'https://petr-petr.ru' . Storage::url($path);
+
+            $maxHash = $this->saveFileInMax($file);
         } else {
             $maxHash = $this->saveFileInMax($file);
         }
@@ -100,7 +105,7 @@ class FilesController extends Controller
             'max_hash' => $maxHash,
             'hash' => $hash,
             'type' => $type,
-            'name' => $file->getClientOriginalName()
+            'name' => $name ?? $file->getClientOriginalName()
         ]);
 
         return AdminPrepare::file($file);

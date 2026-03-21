@@ -14,6 +14,7 @@ use App\Exceptions\Subscriptions\CantContinueSubscriptionException;
 use App\Models\Subscription;
 use App\Models\Tariff;
 use App\Models\User;
+use App\Services\TelegramMailing\TelegramBaseService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -59,17 +60,12 @@ class SubscriptionsService
      */
     public function continue(Subscription $subscription)
     {
-
         DB::transaction(function () use ($subscription) {
-
             $start = now();
-            $end = $this->getEndTime($subscription, $start);;
+            $end = $this->getEndTime($subscription, $start);
 
             $user = $subscription->user;
-
-            if($user->tariff_id !== $subscription->tariff_id) {
-                throw new CantContinueSubscriptionException;
-            }
+            $user->checkSwapTariffModes($subscription->tariff_id);
 
             $subscription->status = SubscriptionStatuses::ACTIVE;
             $subscription->last_payment_at = now();
@@ -78,9 +74,7 @@ class SubscriptionsService
 
             $user->tariff_expired_at = $end;
             $user->save();
-
         });
-
     }
 
     /**

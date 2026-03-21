@@ -8,13 +8,11 @@ namespace App\Jobs\Telegram;
 use App\Consts\FileTypes;
 use App\Consts\MailingStatuses;
 use App\Exceptions\Mailing\MailingWasStopedException;
-use App\Models\File;
 use App\Models\Mailing;
 use App\Models\Tariff;
 use App\Models\User;
 use App\Services\MaxMailing\MaxUpgradeService;
 use App\Services\MaxService;
-use App\Services\TelegramMailing\TelegramUpgradeService;
 use App\Services\TelegramService;
 use App\Services\TextsService;
 use App\Utilits\Telegram\InputMediaDocument;
@@ -219,6 +217,10 @@ class SendMailing implements ShouldQueue
 
     public function handle(TextsService $textsService, TelegramService $telegramService, MaxService $maxService)
     {
+        if($this->mailing->status == MailingStatuses::STOPPED) {
+            throw new MailingWasStopedException;
+        }
+
         $this->textsService = $textsService;
         $this->telegramService = $telegramService;
         $this->maxService = $maxService;
@@ -257,6 +259,11 @@ class SendMailing implements ShouldQueue
                 try {
                     $this->sendMessage($user);
                 } catch (\Throwable $exception) {
+                    Log::info('dispatch TG error', [
+                        $exception->getMessage(),
+                        $exception->getFile(),
+                        $exception->getLine()
+                    ]);
                     $error1 = true;
                 }
             }  
@@ -265,7 +272,7 @@ class SendMailing implements ShouldQueue
                 try {
                     $this->sendMaxMessage($user);
                 } catch (\Throwable $exception) {
-                    Log::info('dispatch error', [
+                    Log::info('dispatch max error', [
                         $exception->getMessage(),
                         $exception->getFile(),
                         $exception->getLine()

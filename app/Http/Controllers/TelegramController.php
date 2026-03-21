@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Consts\SubscriptionStatuses;
+use App\Consts\TariffModes;
 use App\Exceptions\Telegram\NotAllowForBannedException;
 use App\Exceptions\Telegram\NotAllowForGroupsException;
 use App\Jobs\Telegram\DownloadUserPicture;
@@ -22,6 +23,7 @@ use App\Services\TextsService;
 use App\Services\UsersService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use TelegramBot\Api\Types\Inline\InlineKeyboardMarkup;
 
 class TelegramController extends Controller
@@ -884,8 +886,8 @@ class TelegramController extends Controller
 
             if($user->meta_is_buy || $this->optionsService->get('following_enabled')) {
 
-                if(count($args)) {
-                    $this->telegramBaseService->sendTariffs($user, (string)$args[0]);
+                if(count($args) || $user->tariff->mode == TariffModes::FULL) {
+                    $this->telegramBaseService->sendTariffs($user, $args ? (string)$args[0] : TariffModes::FULL);
                 } else {
                     $this->telegramBaseService->sendTariffModes($user);
                 }
@@ -916,7 +918,7 @@ class TelegramController extends Controller
 
                 $this->telegramService->deleteMessage($user, $mid);
 
-            }else{
+            } else {
 
                 if($user->test_started_at && $user->test_started_at >= now()->subDays(30)){
 

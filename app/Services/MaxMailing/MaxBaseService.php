@@ -322,6 +322,12 @@ class MaxBaseService
                     $this->statisticService->onActivity($user);
                 }
                 
+                if($support) {
+                    $user->max_support_chat = $this->max_chat;
+                } else {
+                    $user->max_chat = $this->max_chat;
+                }
+
                 $user->last_activity_at = now();
                 $user->is_alive = true;
                 $user->died_at = null;

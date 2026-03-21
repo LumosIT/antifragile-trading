@@ -136,10 +136,11 @@ class UsersController extends Controller
         ]);
 
         $user->first_payment_at = $user->first_payment_at ?? now();
-        $user-> meta_is_buy = true;
+        $user->meta_is_buy = true;
 
         if(Arr::get($data, 'tariff_id')) {
             $tariff = Tariff::find(Arr::get($data, 'tariff_id'));
+            $user->checkSwapTariffModes($tariff->id);
 
             if($tariff->mode === TariffModes::FULL) {
                 $user->stage = 3;

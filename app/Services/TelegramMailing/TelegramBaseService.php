@@ -316,25 +316,27 @@ class TelegramBaseService
                         'text' => 'Нет',
                         'callback_data' => 'subscribe'
                     ]
-                ]
+                ] 
+                
             ])
         );
 
     }
 
-    public function sendTariffs(User $user, string $mode) : Message
+    public function sendTariffs(User $user, string $mode): Message
     {
+        $query = Tariff::query()->active();
 
-        $tariffs = Tariff::query()
-            ->active()
-            ->where('mode', $mode)
-            ->get()
-            ->sortBy(function (Tariff $tariff) {
-                $this->tariffsService->getDurationSeconds($tariff);
-            });
+        if($mode == TariffModes::SIMPLE) {
+            $query->where('mode', TariffModes::SIMPLE);
+        }
+
+        $tariffs = $query
+            ->orderBy('mode', 'asc')
+            ->get();
 
         $buttons = [];
-        foreach($tariffs as $tariff){
+        foreach($tariffs as $tariff) {
 
             $icon = $tariff->mode === TariffModes::SIMPLE
                 ? '⚪️' : '🟣';
@@ -358,10 +360,9 @@ class TelegramBaseService
 
         return $this->telegramService->send(
             $user,
-            $this->textsService->get('buy_menu'),
+            "Ваш текущий тариф: $tariff->name\n\n" . $this->textsService->get('buy_menu'),
             new InlineKeyboardMarkup($buttons)
         );
-
     }
 
     public function sendTariffModes(User $user) : Message

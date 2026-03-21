@@ -23,6 +23,28 @@
 @endsection
 @push('styles')
     <style>
+        .tg-picker {
+            height: 250px;
+            position: relative;
+        }
+
+        .file-preview {
+            width: 100%;
+            height: 100%;
+        }
+
+        .file-preview img,
+        .file-preview video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .file-preview img {
+            height: 100%;
+            object-fit: contain;
+        }
+
         .text-block-controls{
             display: block;
             height: 100px;
@@ -231,16 +253,59 @@
 
             $block.find('.js-int-mask').intMask();
 
-            $block.find('.tg-picker').tgPicker({
+            let $picker = $block.find('.tg-picker');
+
+            $picker.tgPicker({
                 url : '{{ route('admin.api.files.upload') }}',
-                getLink(file){
+                getLink(file) {
                     return "{{ route('admin.api.files.get', '_var_1') }}".replace('_var_1', file.id);
                 },
-                value : file
+                value : file,
+                onChange(file) {
+                    renderPreview($picker, file);
+                }
             });
 
-            return $block;
+            if(file){
+                renderPreview($picker, file);
+            }
 
+            return $block;
+        }
+
+        function renderPreview($picker, file) {
+            $picker.find('.file-preview').remove();
+
+            if (!file) return;
+
+            let content = '';
+
+            if (file.type === 'video') {
+                content = `
+                    <video controls class="w-100">
+                        <source src="${file.name}" type="video/mp4">
+                    </video>
+                `;
+            } else if (file.type === 'photo') {
+                content = `
+                    <img src="${file.max_hash}">
+                `;
+            }
+
+            let preview = `
+                <div class="file-preview d-flex align-items-center justify-content-center overflow-hidden">
+                    ${content}
+                </div>
+            `;
+
+            $picker.append(preview);
+            let $showBtn = $picker.find('.tg-picker-show');
+
+            if (file && file.type === 'video') {
+                $showBtn.hide();
+            } else {
+                $showBtn.show();
+            }
         }
 
         function getSummerNoteText(el){
@@ -378,10 +443,7 @@
 
         });
 
-        ///////////
-
         $(window).on('load', function(){
-
             @foreach($posts as $post)
                 appendBlock(
                     buildBlock(
@@ -394,11 +456,7 @@
             @endforeach
 
             redrawIndexes();
-
             $(".text-block").removeClass('text-block-hidden');
-
         });
-
-
     </script>
 @endpush

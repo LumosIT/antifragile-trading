@@ -19,9 +19,7 @@ class ApiThrowable
     {
 
         if(config('app.debug')) {
-
             $msg = '';
-
             $errors = $e->errors();
 
             foreach($errors as $field => $messages) {
@@ -29,17 +27,13 @@ class ApiThrowable
             }
 
             throw new ApiError($msg, 422);
-
-        }else{
-
+        } else {
             $errors = $e->errors();
             $errors = array_pop($errors);
             $error = $errors[0];
 
             throw new ApiError($error, 422);
-
         }
-
     }
 
     protected function throwableToApiError(\Throwable $e) : ApiError
@@ -86,7 +80,6 @@ class ApiThrowable
                   throw $response->exception;
               }
 
-
               if ($response instanceof JsonResponse) {
                   $content = $response->getData(true);
               } else {
@@ -98,43 +91,34 @@ class ApiThrowable
                   'response' => $content
               ]);
 
-
-          }catch (DontHavePermissionsException $e){
+          } catch (DontHavePermissionsException $e) {
               throw $this->permissionsExceptionToApiError($e);
-          }catch (AuthenticationException $e) {
+          } catch (AuthenticationException $e) {
               throw $this->authExceptionToApiError($e);
-          }catch (ModelNotFoundException $e){
+          } catch (ModelNotFoundException $e) {
               throw $this->modelNotFoundToApiError($e);
-          }catch (HttpException $e) {
+          } catch (HttpException $e) {
               throw $this->redirectToApiError($e);
-          } catch (ValidationException $e){
+          } catch (ValidationException $e) {
               throw $this->validationExceptionToApiError($e);
-          } catch (ApiError $e){
+          } catch (ApiError $e) {
               throw $e;
           } catch (\Throwable $e) {
               throw $this->throwableToApiError($e);
           }
-
-      }catch (ApiError $e){
-
+      } catch (ApiError $e) {
             return response()->json([
                 'status' => false,
                 'error' => $e->getMessage(),
                 'code' => $e->getCode()
             ]);
-
-      }catch (\Throwable $e){
-
+      } catch (\Throwable $e) {
           return response()->json([
               'status' => false,
               'error' => 'Server error!',
               'code' => 500
           ]);
-
       }
 
     }
-
-
-
 }

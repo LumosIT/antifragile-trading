@@ -114,8 +114,7 @@ class MailingController extends Controller
 
             $mailing->files()->attach($files_ids);
 
-            // если загружено видео, то max требуетс 20-30с, чтобы его обработать и он смог его присылать юзеру
-            $delay = now()->addSeconds(20);
+            $delay = now()->addSeconds(5);
 
             if ($data['start_type'] === 'delayed' && !empty($data['start_at'])) {
                 $delay = Carbon::parse($data['start_at']);

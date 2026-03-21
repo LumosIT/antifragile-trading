@@ -99,8 +99,8 @@ class SupportController extends Controller
     public function sendMessage(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,pdf|max:10240',
-            'voice' => 'nullable|file|mimes:webm,ogg,mp3|max:10240'
+            'file'  => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,pdf|max:10240',
+            'voice' => 'nullable|file|max:10240'
         ]);
 
         $client = User::find($request->client_id);
@@ -116,33 +116,24 @@ class SupportController extends Controller
         }
 
         if ($request->hasFile('file')) {
-
             $file = $request->file('file');
-
             $extension = $file->getClientOriginalExtension();
             $path = $file->store('support', 'public');
             $filePath = asset('storage/' . $path);
-
             $fileExist = true;
-
-        }
-
-        else if ($request->hasFile('voice')) {
-
+        } else if ($request->hasFile('voice')) {
             $file = $request->file('voice');
-
-            $extension = $file->getClientOriginalExtension();
-            $path = $file->store('voices', 'public');
+            $extension = $file->getClientOriginalExtension(); // например 'mp4'
+            $filename = pathinfo($file->hashName(), PATHINFO_FILENAME) . '.' . $extension;
+            $path = $file->storeAs('voices', $filename, 'public');
             $filePath = asset('storage/' . $path);
-
             $fileExist = true;
-
         }
 
         $bot = new MaxService(config('max.support_token'));
 
         if ($fileExist) {
-            if (in_array($extension, ['webm','ogg','mp3'])) {
+            if (in_array($extension, ['webm','ogg','mp3', 'mp4'])) {
                 SendDocument::dispatch($client, $path, $text, 'audio');
             } else if ($extension === 'pdf') {
                 SendDocument::dispatch($client, $path, $text);

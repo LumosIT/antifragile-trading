@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Consts\SubscriptionStatuses;
+use App\Consts\TariffModes;
 use App\Models\Action;
 use App\Models\Order;
 use App\Models\Tariff;
@@ -31,22 +32,24 @@ class MaxController extends Controller
             $data = $request->all();
             $headers = $request->headers->all();
 
-            Log::info($data);
             if($headers['x-max-bot-api-secret'][0] != config('max.secret_phrase')) {
                 return response()->json();
             }
 
             $service = new MaxBaseService(config('max.token'));
             $service->parseMaxWebhook($data);
-            $user = $service->getOrCreateUser();
 
             if(in_array($data['update_type'], ['message_created', 'bot_started'])) {
+                $user = $service->getOrCreateUser();
                 $service->handle($user, $request->input('payload'));
             } else if($data['update_type'] == 'user_added') {
+                $user = User::where('max_user_id', $data['user_id'])->first();
                 Action::register($user->id, 'Был добавлен в канал', $data['chat_id']);
             } else if($data['update_type'] == 'user_removed') {
+                $user = User::where('max_user_id', $data['user_id'])->first();
                 Action::register($user->id, 'Самостоятельно покинул канал', $data['chat_id']);
             } else if($data['update_type'] == 'bot_stopped') {
+                $user = User::where('max_user_id', $data['user_id'])->first();
                 $user->die();
             }
             // $service->test($user);
@@ -138,19 +141,16 @@ class MaxController extends Controller
 
     }
 
-    public function renewTariff(Request $request) {
+    public function renewTariff(Request $request)
+    {
         $user = User::where('max_chat', $request->chat)->first();
-
         $optionsService = app(OptionsService::class);
 
-        if($optionsService->get('following_enabled') && !$user->is_test_completed) {
-            $tariffs = Tariff::where('is_active', true)
-                ->where('mode', 'simple')
-                ->get();
-        } else if($optionsService->get('following_enabled') && $user->is_test_completed) {
-            $tariffs = Tariff::where('is_active', true)
-                ->get();
-        } else if(!$user->meta_is_buy && !$optionsService->get('following_enabled')) {
+        $followingEnabled = $optionsService->get('following_enabled');
+        $isTestCompleted = $user->is_test_completed;
+        $isBought = $user->meta_is_buy;
+
+        if (!$isBought && !$followingEnabled) {
             $service = new TextsService();
 
             return response()->json([
@@ -159,21 +159,27 @@ class MaxController extends Controller
                 'message' => $service->get('pre_registration_announcement', [
                     'balance' => $user->balance ?? 0
                 ])
-            ]); 
-        } else if($user->meta_is_buy && $user->is_test_completed) {
-            $tariffs = Tariff::where('is_active', true)
-                ->get();
-
-        } else if ($user->meta_is_buy && !$user->is_test_completed){
-            $tariffs = Tariff::where('is_active', true)
-                ->where('mode', 'simple')
-                ->get();
+            ]);
         }
+
+        $query = Tariff::where('is_active', true);
+
+        if ($user->tariff->mode == TariffModes::FULL) {
+            // ничего не добавляем — все тарифы
+        } elseif ($followingEnabled) {
+            if (!$isTestCompleted) {
+                $query->where('mode', TariffModes::SIMPLE);
+            }
+        } elseif ($isBought && !$isTestCompleted) {
+            $query->where('mode', TariffModes::SIMPLE);
+        }
+
+        $tariffs = $query->orderBy('mode', 'asc')->get();
 
         return response()->json([
             'tariffs' => $tariffs,
             'showForm' => false,
-        ]); 
+        ]);
     }
 
     public function enableAutoPayment(Request $request) {

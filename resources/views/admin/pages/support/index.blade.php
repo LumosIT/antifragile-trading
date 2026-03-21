@@ -74,7 +74,7 @@
                         <div class="card-body border-bottom" style="border-right: 1px solid var(--default-border) !important;">
                             <input class="form-control" id="search" type="text" placeholder="Поиск">
                         </div>
-                        <div class="message-center ps-container ps-theme-default" id="messagesBlock" style="width: 100%; height: 670px; border-right: 1px solid var(--default-border) !important;">
+                        <div class="message-center ps-container ps-theme-default" id="messagesBlock" style="overflow: auto !important; width: 100%; height: 670px; border-right: 1px solid var(--default-border) !important;">
                         </div>
                     </div>
                     <div class="col-lg-8 col-xl-9" style="max-height: 770px; padding-left: 0;">
@@ -232,63 +232,110 @@
         let isRecording = false;
 
         $('#record-audio').on('click', async function () {
-            if (!isRecording) {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            try {
+                if (!isRecording) {
 
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
+                    if (!window.MediaRecorder) {
+                        alert('❌ Ваш браузер не поддерживает запись аудио');
+                        return;
+                    }
 
-                mediaRecorder.ondataavailable = e => {
-                    audioChunks.push(e.data);
-                };
+                    // Запрашиваем доступ к микрофону
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-                mediaRecorder.onstop = sendAudio;
+                    let options = {};
+                    let fileExt = 'webm'; // по умолчанию для десктопа
+                    let mimeType = 'audio/webm';
 
-                mediaRecorder.start();
-                isRecording = true;
+                    // На iOS Safari используем mp4/m4a
+                    const isIOS = /iP(hone|od|ad)/.test(navigator.userAgent);
+                    if (isIOS) {
+                        if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                            options.mimeType = 'audio/mp4';
+                            fileExt = 'mp4';
+                            mimeType = 'audio/mp4';
+                        } else if (MediaRecorder.isTypeSupported('audio/m4a')) {
+                            options.mimeType = 'audio/m4a';
+                            fileExt = 'm4a';
+                            mimeType = 'audio/m4a';
+                        }
+                    } else {
+                        // Десктоп — пробуем webm
+                        if (MediaRecorder.isTypeSupported('audio/webm')) {
+                            options.mimeType = 'audio/webm';
+                        }
+                    }
 
-                $('#record-audio').text('⏹');
-            } else {
+                    mediaRecorder = new MediaRecorder(stream, options);
+                    audioChunks = [];
 
-                mediaRecorder.stop();
-                isRecording = false;
-                $('#record-audio').text('🎤');
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = () => sendAudio(fileExt, mimeType);
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    $('#record-audio').text('⏹');
+
+                } else {
+                    mediaRecorder.stop();
+                    isRecording = false;
+                    $('#record-audio').text('🎤');
+                }
+            } catch (err) {
+                alert('💥 Ошибка записи: ' + err.message);
+                console.error(err);
             }
         });
 
-        function sendAudio() {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-
-            const formData = new FormData();
-            formData.append('dialog_id', currentDialog);
-            formData.append('client_id', currentClientId);
-            formData.append('voice', audioBlob, 'voice.webm');
-
-            $.ajax({
-                type: 'POST',
-                url: "/support/send-message",
-                data: formData,
-                contentType: false,
-                processData: false,
-                success: function (response) {
-                    if (response.success) {
-                        const msg = {
-                            author: 'admin',
-                            text: null,
-                            file_exist: true,
-                            file_path: response.file_path,
-                            created_at: new Date().toISOString().slice(0,19).replace('T',' ')
-                        };
-
-                        $('#block-messages').append(buildMessageHtml(msg));
-
-                        setTimeout(() => {
-                            const block = $('#block-messages');
-                            block.scrollTop(block[0].scrollHeight);
-                        }, 50);
-                    }
+        function sendAudio(fileExt, mimeType) {
+            try {
+                if (!audioChunks || audioChunks.length === 0) {
+                    alert('⚠️ audioChunks пустой');
+                    return;
                 }
-            });
+
+                const audioBlob = new Blob(audioChunks, { type: mimeType });
+
+                const formData = new FormData();
+                formData.append('dialog_id', currentDialog);
+                formData.append('client_id', currentClientId);
+                formData.append('voice', audioBlob, `voice.${fileExt}`);
+
+                $.ajax({
+                    type: 'POST',
+                    url: "/support/send-message",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        if (response.success) {
+                            const msg = {
+                                author: 'admin',
+                                text: null,
+                                file_exist: true,
+                                file_path: response.file_path,
+                                created_at: new Date().toISOString().slice(0,19).replace('T',' ')
+                            };
+
+                            $('#block-messages').append(buildMessageHtml(msg));
+                            setTimeout(() => {
+                                const block = $('#block-messages');
+                                block.scrollTop(block[0].scrollHeight);
+                            }, 50);
+                        } else {
+                            alert('❌ Response.success == false: ' + (response.message || 'Нет сообщения'));
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        alert('❌ AJAX ошибка: ' + status + ' | ' + error + '\n' + xhr.responseText);
+                        console.error(xhr);
+                    }
+                });
+
+            } catch (err) {
+                alert('💥 Ошибка sendAudio(): ' + err.message);
+                console.error(err);
+            }
         }
 
         function getDialogs(forceRender = false) {
@@ -472,7 +519,7 @@
                 } else if (msg.file_exist && msg.file_path) {
                     const lower = msg.file_path.toLowerCase();
 
-                    if (lower.endsWith('.webm') || lower.endsWith('.ogg')) {
+                    if (lower.endsWith('.webm') || lower.endsWith('.ogg') || lower.endsWith('.mp4') || lower.endsWith('.bin')) {
                         fileBlock = `
                             <div class="mt-2">
                                 <audio controls>

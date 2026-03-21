@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Consts\TariffModes;
 use App\Consts\UserStages;
+use App\Services\TelegramMailing\TelegramBaseService;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -184,5 +186,20 @@ class User extends Authenticatable
         $this->is_alive = false;
         $this->died_at = now();
         $this->save();
+    }
+
+    public function checkSwapTariffModes($newTariffId) {
+        if($this->tariff_id !== $newTariffId) {
+            $oldTariff = Tariff::find($this->tariff_id);
+            $newTariff = Tariff::find($newTariffId);
+
+            if($oldTariff->mode == TariffModes::FULL && $newTariff->mode == TariffModes::SIMPLE) {
+                $telegramBaseService = app(TelegramBaseService::class);
+                $telegramBaseService->kickFromThirdStairChannel($this);
+            }
+            
+            $this->tariff_id = $newTariff->id;
+            $this->save();
+        }
     }
 }

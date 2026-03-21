@@ -10,6 +10,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class SendDocument implements ShouldQueue
@@ -34,8 +35,7 @@ class SendDocument implements ShouldQueue
             $bot = new MaxService(config('max.support_token'));
             $fullPath = Storage::disk('public')->path($this->filePath);
             $maxHash = $this->uploadFileToMax($fullPath);
-
-            sleep(10);
+            sleep(5);
 
             $bot->sendFile($this->user->max_support_chat, $maxHash, $this->text, $this->type);
         }
@@ -64,12 +64,10 @@ class SendDocument implements ShouldQueue
                 throw new \Exception('Failed to upload file to MAX');
             }
 
-            // если audio/video → токен уже получили
             if ($fileToken) {
                 return $fileToken;
             }
 
-            // если image/file → токен приходит здесь
             $result = $response->json();
 
             if (!isset($result['token'])) {

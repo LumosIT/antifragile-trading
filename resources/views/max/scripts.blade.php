@@ -193,7 +193,7 @@ function initVueApp(startStep = 1, user, data) {
     app.component('carousel', {
         template: `
         <div class="card need-colored shadow-lg p-4 w-100 d-flex flex-column">
-            <h1 class="text-center text-light">Презентация клуба</h1>
+            <h1 class="text-center">Презентация клуба</h1>
             <p class="text-center text-secondary">
                 Доступ на 2 ступень закрытого клуба открывается 1 раз в 2 месяца
             </p>
@@ -393,7 +393,7 @@ function initVueApp(startStep = 1, user, data) {
                 <div v-else-if="error">Синхронизация прошла успешно, обновите страницу и увидите данные вашего профиля</div>
                 <div v-else>
 
-                    <button class="btn btn-dark mt-2 mb-2 w-100" @click="copyLink">
+                    <button class="btn btn-light mt-2 mb-2 w-100" @click="copyLink">
                         📋 Скопировать реферальную ссылку
                     </button>
 
@@ -406,7 +406,7 @@ function initVueApp(startStep = 1, user, data) {
                     <div v-if="tariff" class="mt-4">
 
                         <button 
-                            class="btn btn-dark mb-2 w-100"
+                            class="btn btn-light mb-2 w-100"
                             @click="renewTariff">
                             🔄 Продлить тариф вручную
                         </button>

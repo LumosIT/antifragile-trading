@@ -43,31 +43,10 @@ class TariffsService
 
     public function getDurationSeconds(Tariff $tariff) : int
     {
-
         $now = now();
 
         return $now->diffInSeconds(
             $this->getEndTime($tariff, $now)
         );
-
     }
-
-//    public function getDurationText(Tariff $tariff) : string
-//    {
-//
-//        switch($tariff->period){
-//            case TariffPeriods::DAY:
-//                return \morphos\Russian\pluralize($tariff->duration, 'день');
-//            case TariffPeriods::WEEK:
-//                return \morphos\Russian\pluralize($tariff->duration, 'неделя');
-//            case TariffPeriods::MONTH:
-//                return \morphos\Russian\pluralize($tariff->duration, 'месяц');
-//            case TariffPeriods::YEAR:
-//                return \morphos\Russian\pluralize($tariff->duration, 'год');
-//
-//        }
-//
-//    }
-
-
 }

@@ -6,6 +6,7 @@ namespace App\Services;
  * Сервис для работы с пользователями
  */
 
+use App\Consts\TariffModes;
 use App\Exceptions\Users\NotEnoughBalanceException;
 use App\Models\Dialog;
 use App\Models\User;
@@ -120,26 +121,53 @@ class UsersService
         $optionService = app(OptionsService::class);
         $telegramService = app(TelegramService::class);
 
+        $code = $orderService->generateUniqueCode();
         $channel = -$this->optionsService->get('channel_second_stair_id');
+        $inviteSecondTelegram = $telegramService->createChannelLink($channel);
+        $inviteSecondMax =  $optionService->get('max_invite_link');
+        $expiriedAt = $user->tariff_expired_at->format('d.m.Y H:i');
 
         $maxService->sendMessage(
             $user->max_chat, 
             $textService->get('invite_to_second_stair', [
-                'telegram_link' => $telegramService->createChannelLink($channel),
-                'max_link' => $optionService->get('max_invite_link'), 
-                'expired' => $user->tariff_expired_at->format('d.m.Y H:i'),
-                'order_id' => $orderService->generateUniqueCode()
+                'telegram_link' => $inviteSecondTelegram,
+                'max_link' => $inviteSecondMax, 
+                'expired' => $expiriedAt,
+                'order_id' => $code
             ]
         ));
 
         $telegramService->send(
             $user, 
             $textService->get('invite_to_second_stair', [
-                'telegram_link' => $telegramService->createChannelLink($channel),
-                'max_link' => $optionService->get('max_invite_link'), 
-                'expired' => $user->tariff_expired_at->format('d.m.Y H:i'),
-                'order_id' => $orderService->generateUniqueCode()
+                'telegram_link' => $inviteSecondTelegram,
+                'max_link' => $inviteSecondMax, 
+                'expired' => $expiriedAt,
+                'order_id' => $code
             ]
         ));
+
+        if($user->tariff->mode == TariffModes::FULL) {
+            $channel = -$this->optionsService->get('channel_third_stair_id');
+            $inviteThirdTelegram = $telegramService->createChannelLink($channel);
+
+            $maxService->sendMessage(
+                $user->max_chat,
+                $textService->get('invite_to_third_stair', [
+                    'link' => $optionService->get('max_invite_third_stair_link'),
+                    'expired' => $user->tariff_expired_at->format('d.m.Y H:i'),
+                    'order_id' => $code
+                ])
+            );
+
+            $telegramService->send(
+                $user,
+                $textService->get('invite_to_third_stair', [
+                    'link' => $inviteThirdTelegram,
+                    'expired' => $user->tariff_expired_at->format('d.m.Y H:i'),
+                    'order_id' => $code,
+                ])
+            );
+        }
     }
 }

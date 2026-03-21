@@ -67,6 +67,29 @@
             .note-editable p{
                 margin-bottom: 0;
             }
+
+            .tg-picker {
+                height: 200px;
+                position: relative;
+            }
+
+            .file-preview {
+                width: 100%;
+                height: 100%;
+            }
+
+            .file-preview img,
+            .file-preview video {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+
+            .file-preview img {
+                height: 100%;
+                object-fit: contain;
+            }
+
         </style>
 
         @yield('styles')

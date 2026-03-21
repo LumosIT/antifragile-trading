@@ -7,6 +7,7 @@ namespace App\Services;
  */
 
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 use TelegramBot\Api\BotApi;
 use TelegramBot\Api\Types\InputMedia\ArrayOfInputMedia;
 use TelegramBot\Api\Types\Message;
@@ -21,9 +22,14 @@ class TelegramService
         $this->bot = new BotApi(
             $optionsService->get('telegram_bot_token')
         );
+        // Таймауты
+        $this->bot->setCurlOption(CURLOPT_TIMEOUT, 15);
+        $this->bot->setCurlOption(CURLOPT_CONNECTTIMEOUT, 15);
 
-        $this->bot->setCurlOption(CURLOPT_TIMEOUT, 60);
-        $this->bot->setCurlOption(CURLOPT_CONNECTTIMEOUT, 60);
+        // Прокси (HTTP)
+        $this->bot->setCurlOption(CURLOPT_PROXY, '94.154.191.202:62458');
+        $this->bot->setCurlOption(CURLOPT_PROXYUSERPWD, 'pRBDDXMk:2WYtjmE4');
+        $this->bot->setCurlOption(CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
     }
 
     public function send(User $user, string $message, $markup = null, ?string $mid = null): Message
@@ -38,13 +44,11 @@ class TelegramService
 
     public function sendGallery(User $user, ArrayOfInputMedia $files, ?string $message = null) : array
     {
-
         if($message) {
             $files[0]->setCaption($message);
         }
 
         return $this->bot->sendMediaGroup($user->chat, $files);
-
     }
 
     public function sendPhoto(User $user, $photo, string $message, $markup = null) : Message
