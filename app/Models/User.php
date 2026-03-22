@@ -4,7 +4,9 @@ namespace App\Models;
 
 use App\Consts\TariffModes;
 use App\Consts\UserStages;
+use App\Services\OptionsService;
 use App\Services\TelegramMailing\TelegramBaseService;
+use App\Services\TelegramService;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -188,18 +190,18 @@ class User extends Authenticatable
         $this->save();
     }
 
-    public function checkSwapTariffModes($newTariffId) {
-        if($this->tariff_id !== $newTariffId) {
-            $oldTariff = Tariff::find($this->tariff_id);
-            $newTariff = Tariff::find($newTariffId);
+    public function updateTariff($newTariffId) {
+        $telegramService = app(TelegramService::class);
+        $optionService = app(OptionsService::class);
+        $newTariff = Tariff::find($newTariffId);
+        $channel = -$optionService->get('channel_third_stair_id');
 
-            if($oldTariff->mode == TariffModes::FULL && $newTariff->mode == TariffModes::SIMPLE) {
-                $telegramBaseService = app(TelegramBaseService::class);
-                $telegramBaseService->kickFromThirdStairChannel($this);
-            }
-            
-            $this->tariff_id = $newTariff->id;
-            $this->save();
+        if($newTariff->mode == TariffModes::SIMPLE && $telegramService->checkIsChannelMember($channel, $this)) {
+            $telegramBaseService = app(TelegramBaseService::class);
+            $telegramBaseService->kickFromThirdStairChannel($this);
         }
+        
+        $this->tariff_id = $newTariff->id;
+        $this->save();
     }
 }

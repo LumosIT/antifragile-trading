@@ -65,8 +65,6 @@ class SubscriptionsService
             $end = $this->getEndTime($subscription, $start);
 
             $user = $subscription->user;
-            $user->checkSwapTariffModes($subscription->tariff_id);
-
             $subscription->status = SubscriptionStatuses::ACTIVE;
             $subscription->last_payment_at = now();
             $subscription->next_payment_at = $this->tariffsService->getEndTime($user->tariff, $start);

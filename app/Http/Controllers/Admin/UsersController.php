@@ -19,6 +19,7 @@ use App\Utilits\TableGenerator\PerfectPaginatorResponse;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 
 class UsersController extends Controller
 {
@@ -140,7 +141,7 @@ class UsersController extends Controller
 
         if(Arr::get($data, 'tariff_id')) {
             $tariff = Tariff::find(Arr::get($data, 'tariff_id'));
-            $user->checkSwapTariffModes($tariff->id);
+            $user->updateTariff($tariff->id);
 
             if($tariff->mode === TariffModes::FULL) {
                 $user->stage = 3;

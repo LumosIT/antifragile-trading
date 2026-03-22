@@ -18,6 +18,7 @@ use App\Services\PromocodesService;
 use App\Services\StatisticService;
 use App\Services\SubscriptionsService;
 use App\Services\TariffsService;
+use App\Services\TelegramMailing\TelegramBaseService;
 use App\Services\UsersService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -201,7 +202,7 @@ class CloudPaymentsController extends Controller
         DB::transaction(function() use ($token, $tariff, $order, $transaction_id, $user, $cloudData, $card, $next_payment_date, $subscription_amount) {
 
             if(!$user->meta_is_buy) {
-                $user-> meta_is_buy = true;
+                $user->meta_is_buy = true;
                 $user->first_payment_at = now();
             }
 
@@ -346,6 +347,7 @@ class CloudPaymentsController extends Controller
                     throw new \Exception('No active subscription');
                 }
 
+                $user->updateTariff($subscription->tariff_id);
                 $this->onContinuedPayment($user, $subscription, $transaction_id, $amount);
             } else {
                 $order = $this->getOrderFromData($data);
@@ -358,7 +360,8 @@ class CloudPaymentsController extends Controller
                     throw new \Exception('Tariff not available');
                 }
 
-                $this->onNewPayment($user,$order,$order->tariff, $token, $transaction_id, $card);
+                $user->updateTariff($order->tariff->id);
+                $this->onNewPayment($user, $order, $order->tariff, $token, $transaction_id, $card);
             }
         }
 
